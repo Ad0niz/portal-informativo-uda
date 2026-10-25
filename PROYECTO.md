@@ -9,11 +9,21 @@ Reemplazar el flujo de consulta del blog actual por un portal de avisos académi
 | Rol | Puede hacer |
 | --- | --- |
 | Estudiante | Buscar, filtrar, leer, compartir y suscribirse por tema. |
-| Redactor | Crear borradores y enviarlos a revisión. |
-| Aprobador | Revisar avisos de otra persona, devolverlos con un motivo, publicarlos o archivarlos. |
-| Administración | Crear cuentas y supervisar el contenido. |
+| Secretaría | Crear y editar avisos, guardar borradores, publicar directamente, enviar a revisión cuando sea necesario, archivar avisos y eliminar borradores propios. |
+| Aprobador | Revisar únicamente los avisos enviados voluntariamente a revisión, aprobarlos y publicarlos o solicitar cambios con una observación. |
+| Administración | Gestionar cuentas, supervisar contenido y actuar sobre avisos cuando sea necesario. |
 
-Un aviso sigue el flujo **borrador → en revisión → publicado**. Si se devuelve, vuelve a borrador luego de corregirse. Solo la aprobación publica el aviso y dispara las alertas.
+La aprobación no es obligatoria. Secretaría puede publicar directamente cuando la información está confirmada o necesita salir con rapidez. Si existen dudas sobre el contenido, datos o redacción, puede solicitar una segunda revisión.
+
+Flujo principal:
+
+```text
+borrador → publicar → publicado
+        ↘ enviar a revisión → aprobar → publicado
+                            ↘ solicitar cambios → borrador/cambios solicitados
+```
+
+Este modelo evita que la revisión se convierta en un cuello de botella para avisos urgentes, pero mantiene una instancia de control editorial disponible cuando el equipo la necesita.
 
 ## Contenido de cada aviso
 
@@ -22,19 +32,27 @@ Un aviso sigue el flujo **borrador → en revisión → publicado**. Si se devue
 - Contenido completo y fecha relacionada opcional.
 - Prioridad normal o importante.
 - Fecha de publicación, autor y estado editorial.
+- Observación del Aprobador cuando se solicitan cambios.
 
 ## Notificaciones
 
 - **Navegador:** cada estudiante autoriza el permiso en su dispositivo y elige temas. La notificación abre el aviso al pulsarla. Requiere HTTPS y claves VAPID.
 - **Correo:** cada estudiante elige temas y confirma la dirección por correo. Cada mensaje incluye un enlace para cancelar la suscripción. Requiere un dominio y un proveedor de envío configurado.
 
+Las notificaciones se generan en el momento en que un aviso pasa a estado **publicado**, ya sea mediante publicación directa de Secretaría/Administración o mediante aprobación después de una revisión.
+
 ## Criterios para una primera puesta en marcha
 
 1. La unidad responsable valida nombre, identidad visual, textos legales y dominio.
-2. Se designan al menos una persona redactora y una aprobadora distintas.
+2. Se designa al menos una cuenta de Administración y una cuenta de Secretaría. El rol Aprobador es recomendable, pero no obligatorio para publicar.
 3. Se configuran HTTPS, correo remitente y contacto para notificaciones del navegador.
-4. Se eliminan los tres avisos de demostración y se publica un aviso real de prueba.
-5. Se verifica la recepción y el enlace de apertura en un teléfono y un computador.
-6. Se define quién mantiene las cuentas, la copia de seguridad y la actualización de avisos.
+4. Se eliminan los avisos de demostración y se publica un aviso real de prueba.
+5. Se prueban ambos flujos: publicación directa y publicación después de revisión.
+6. Se verifica la recepción y el enlace de apertura en un teléfono y un computador.
+7. Se define quién mantiene las cuentas, los respaldos y la actualización de avisos.
 
-Esta implementación es un MVP local. Para operación institucional continua se recomienda sustituir el archivo JSON por una base de datos, integrar el acceso institucional y definir respaldo y auditoría.
+## Estado actual del prototipo
+
+La demo desplegada ya utiliza Vercel, Supabase PostgreSQL, Supabase Auth, Resend y Web Push. El archivo JSON se mantiene únicamente para desarrollo local.
+
+La publicación como canal institucional oficial requiere validación de la Universidad de Atacama, definición de responsables editoriales, políticas de acceso y continuidad operativa.
