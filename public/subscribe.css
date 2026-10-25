@@ -1,0 +1,28 @@
+.subscribe-dialog{width:min(760px,calc(100% - 32px))}
+.subscribe-dialog .dialog-body{padding:48px 54px 50px}
+.subscribe-dialog .dialog-summary{max-width:620px;margin-bottom:28px}
+.subscription-form{display:grid;gap:2px}
+.subscription-form .field{margin-bottom:20px}
+.subscription-form .field-label{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:5px;font-size:12px;color:#445e70;font-weight:800;letter-spacing:.01em}
+.subscription-form .field-help{display:block;margin-top:7px;color:#7b8b96;font-size:11px;line-height:1.45}
+.subscription-form input[type="email"]{min-height:52px;padding:13px 15px;border:1px solid #cbd7dd;background:#fff;transition:border-color .16s,box-shadow .16s,background .16s}
+.subscription-form input[type="email"]:hover{border-color:#9fb0bb}
+.subscription-form input[type="email"]:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(16,44,67,.08);outline:0}
+.subscription-form .topics-field{margin-top:2px}
+.topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:11px 0 8px}
+.topic-card{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr) 24px;align-items:center;gap:12px;min-height:82px;padding:15px 16px;border:1px solid #dce3e6;background:#fff;cursor:pointer;transition:border-color .16s,background .16s,box-shadow .16s,transform .16s;user-select:none}
+.topic-card:hover{border-color:#9fb1bc;box-shadow:0 8px 24px rgba(15,43,64,.06);transform:translateY(-1px)}
+.topic-card:has(input:focus-visible){outline:3px solid #e5a548;outline-offset:2px}
+.topic-card:has(input:checked){border-color:var(--navy);background:#f1f5f7;box-shadow:inset 3px 0 0 var(--accent)}
+.topic-card input{position:absolute;opacity:0;pointer-events:none}
+.topic-index{display:grid;place-items:center;width:38px;height:38px;border:1px solid #d6dfe3;color:#718692;font-family:Georgia,"Times New Roman",serif;font-size:15px;background:#fafbfa;transition:background .16s,border-color .16s,color .16s}
+.topic-card:has(input:checked) .topic-index{background:var(--navy);border-color:var(--navy);color:#fff}
+.topic-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.topic-copy strong{font-size:13px;color:var(--navy);line-height:1.2}
+.topic-copy small{font-size:11px;line-height:1.4;color:#748590;font-weight:400}
+.topic-check{display:grid;place-items:center;width:22px;height:22px;border:1px solid #bcc9cf;border-radius:50%;color:transparent;font-size:12px;font-weight:800;transition:background .16s,border-color .16s,color .16s}
+.topic-check:after{content:"✓"}
+.topic-card:has(input:checked) .topic-check{background:var(--accent);border-color:var(--accent);color:#fff}
+.subscription-submit{margin-top:8px;min-height:52px;padding-inline:22px;justify-self:start}
+.subscription-form .form-message{margin-top:13px}
+@media(max-width:680px){.subscribe-dialog .dialog-body{padding:40px 24px 32px}.subscribe-dialog .dialog-body h2{font-size:32px}.topic-grid{grid-template-columns:1fr}.topic-card{min-height:76px}.subscription-submit{width:100%;justify-self:stretch}.subscription-form .field-label{align-items:flex-start;flex-direction:column;gap:3px}}
