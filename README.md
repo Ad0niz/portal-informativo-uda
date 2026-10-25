@@ -11,7 +11,8 @@ Portal de avisos académicos para estudiantes de Derecho de la Universidad de At
 - Correo electrónico: Azure Communication Services Email.
 - Notificaciones del navegador: Web Push con VAPID.
 - Tres cuentas demo creadas: **Administración**, **Secretaría** y **Aprobador**. Las credenciales se mantienen fuera del repositorio.
-- Web Push configurado y probado en producción. El correo utiliza un dominio administrado por Azure para permitir pruebas con destinatarios reales sin depender de un dominio institucional.
+- Web Push configurado y probado en producción.
+- El flujo de correo fue probado satisfactoriamente el **25 de octubre de 2026** con una cuenta real `@alumnos.uda.cl`: se recibió el correo de confirmación de suscripción y posteriormente un aviso publicado desde el panel.
 
 La configuración técnica, las pruebas realizadas y las consideraciones para producción están documentadas en `DEPLOYMENT.md`.
 
@@ -100,6 +101,22 @@ En producción las suscripciones por correo utilizan **Azure Communication Servi
 
 Para la demo se utiliza un dominio administrado gratuitamente por Azure (`azurecomm.net`), por lo que no es necesario comprar un dominio propio ni utilizar una cuenta personal como remitente. El remitente visible es del tipo `DoNotReply@<dominio-administrado>.azurecomm.net`.
 
+El flujo validado es:
+
+```text
+Estudiante
+   ↓
+Selecciona temas y registra su correo
+   ↓
+Azure envía confirmación
+   ↓
+Estudiante confirma la suscripción
+   ↓
+Secretaría / Administración publica un aviso
+   ↓
+Azure envía el aviso a los suscriptores de la categoría
+```
+
 Los correos incluyen un enlace directo al aviso y una opción para cancelar la suscripción.
 
 Variables principales:
@@ -111,6 +128,8 @@ PUBLIC_BASE_URL=
 ```
 
 La connection string es privada y debe almacenarse únicamente como secreto del servidor. No debe incluirse en Git ni exponerse en JavaScript público.
+
+**Resend ya no forma parte del flujo activo de correo del portal.**
 
 ## Web Push
 
@@ -137,6 +156,18 @@ npm test
 ```
 
 El proyecto también cuenta con pruebas de integración para validar el flujo contra Supabase y el despliegue real en Vercel. Consulta `DEPLOYMENT.md` para más información.
+
+### Prueba real de correo
+
+El **25 de octubre de 2026** se validó en producción el flujo completo con una cuenta de estudiante `@alumnos.uda.cl`:
+
+1. Solicitud de suscripción desde el portal.
+2. Recepción del correo de confirmación.
+3. Confirmación de la suscripción.
+4. Publicación de un aviso desde el panel.
+5. Recepción del aviso por correo con enlaces **Leer aviso** y **Dejar de recibir correos**.
+
+Esta prueba confirmó que la demo puede enviar correos reales en tiempo de ejecución sin depender de un dominio propio.
 
 ## Contexto
 
