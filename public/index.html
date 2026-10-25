@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#102c43">
+  <meta name="theme-color" content="#264c59">
   <meta name="description" content="Avisos, cambios de clases y evaluaciones para estudiantes de Derecho de la Universidad de Atacama.">
   <title>Panel Informativo | Derecho UDA</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/featured.css">
   <link rel="stylesheet" href="/subscribe.css">
+  <link rel="stylesheet" href="/uda-refine.css">
 </head>
 <body>
   <a class="skip-link" href="#avisos">Saltar a los avisos</a>
@@ -49,16 +50,25 @@
 
     <section class="notice-section" id="avisos">
       <div class="container">
-        <div class="section-heading"><div><span class="section-kicker">EL PANEL</span><h2>Avisos recientes<span class="heading-dot">.</span></h2><p>Información publicada para estudiantes de Derecho.</p></div><span class="section-count" id="result-count">Cargando avisos…</span></div>
+        <div class="section-heading"><div><span class="section-kicker">EL PANEL</span><h2>Avisos recientes<span class="heading-dot">.</span></h2><p>Información publicada para estudiantes de Derecho.</p></div></div>
         <div class="notice-layout">
           <div class="notice-main">
-            <div class="toolbar"><div class="filters" id="filters" role="group" aria-label="Filtrar avisos por categoría"></div><label class="search-box"><span class="search-icon" aria-hidden="true">⌕</span><span class="visually-hidden">Buscar avisos</span><input id="search" type="search" placeholder="Buscar un aviso…" autocomplete="off"></label></div>
+            <div class="toolbar">
+              <div class="filters" id="filters" role="group" aria-label="Filtrar avisos por categoría"></div>
+              <div class="toolbar-right">
+                <span class="section-count" id="result-count">Cargando avisos…</span>
+                <label class="search-box"><span class="search-icon" aria-hidden="true">⌕</span><span class="visually-hidden">Buscar avisos</span><input id="search" type="search" placeholder="Buscar un aviso…" autocomplete="off"></label>
+              </div>
+            </div>
             <div id="notice-list" class="notice-list" aria-live="polite"></div>
             <div id="empty-state" class="empty-state" hidden><span aria-hidden="true">⌕</span><h3>No encontramos avisos</h3><p>Prueba otra búsqueda o cambia la categoría seleccionada.</p><button class="button button-dark" id="clear-filters" type="button">Ver todos los avisos</button></div>
           </div>
           <aside class="side-column">
             <div class="side-card side-card-dark" id="suscripciones"><div class="side-card-icon" aria-hidden="true">↗</div><span class="side-kicker">MANTENTE AL DÍA</span><h3>Que los avisos<br>lleguen a ti.</h3><p>Elige los temas que te interesan y activa las notificaciones que prefieras.</p>
-              <div class="subscribe-actions"><button class="button button-white" type="button" id="push-open" hidden>Activar en este navegador</button><button class="button button-outline-light" type="button" id="email-open" hidden>Recibir por correo</button></div>
+              <div class="subscribe-actions">
+                <div class="subscribe-option"><div class="subscribe-option-copy"><strong>Notificación instantánea</strong><span>Recíbela directamente en este dispositivo.</span></div><button class="button button-white" type="button" id="push-open" hidden>Activar navegador</button></div>
+                <div class="subscribe-option"><div class="subscribe-option-copy"><strong>Avisos por correo</strong><span>Recibe solo las categorías que hayas elegido.</span></div><button class="button button-outline-light" type="button" id="email-open" hidden>Configurar correo</button></div>
+              </div>
               <p id="subscribe-unavailable" class="tiny-note" hidden>Las suscripciones se habilitarán cuando el portal tenga un dominio y servicios de envío configurados.</p>
               <p class="side-privacy">Tú eliges los temas. Puedes dejar de recibir avisos cuando quieras.</p>
             </div>
@@ -69,7 +79,7 @@
     </section>
   </main>
 
-  <footer class="footer"><div class="container footer-inner"><div><strong>Derecho UDA <span class="footer-separator">/</span> Panel Informativo</strong><p>Un espacio para consultar avisos académicos con facilidad.</p></div><div class="footer-links"><a href="https://uda.cl/ciencias-juridicas/derecho/" target="_blank" rel="noopener">Universidad de Atacama ↗</a><a href="/admin">Acceso encargados</a></div></div><div class="container footer-bottom"><span>Proyecto de portal informativo</span><span>Copiapó · Chile</span></div></footer>
+  <footer class="footer"><div class="container footer-inner"><div><strong>Derecho UDA <span class="footer-separator">/</span> Panel Informativo</strong><p>Un espacio para consultar avisos académicos con facilidad.</p></div><div class="footer-links"><a href="https://uda.cl/ciencias-juridicas/derecho/" target="_blank" rel="noopener">Universidad de Atacama ↗</a><a href="/admin">Acceso encargados</a></div></div><div class="container footer-bottom"><span class="footer-demo"><strong>Demo académica</strong> · Proyecto CEAL · Universidad de Atacama</span><span>Copiapó · Chile</span></div></footer>
 
   <dialog id="notice-dialog" class="dialog notice-dialog"><button class="dialog-close" type="button" data-close aria-label="Cerrar">×</button><div id="notice-detail"></div></dialog>
   <dialog id="subscribe-dialog" class="dialog subscribe-dialog"><button class="dialog-close" type="button" data-close aria-label="Cerrar">×</button><div id="subscribe-content"></div></dialog>
