@@ -6,9 +6,12 @@
 - Vercel: proyecto independiente `portal-informativo-uda`, dentro del workspace `adoniz-projects`.
 - URL pública: https://portal-informativo-uda.vercel.app ; administración: https://portal-informativo-uda.vercel.app/admin .
 - Código en el repositorio público https://github.com/Ad0niz/portal-informativo-uda ; rama de producción `main` conectada a Vercel. Los pushes a esa rama inician despliegues automáticos.
-- Adaptador en `api/index.js` y `lib/cloud.mjs`; esquema versionado en `supabase/schema.sql`.
+- Adaptador en `api/index.js` y `lib/cloud.mjs`; gestión administrativa adicional en `lib/accounts.mjs`; esquema versionado en `supabase/schema.sql`.
 - Variables de servidor configuradas en Vercel. Las claves privadas se mantienen fuera del repositorio.
-- Tres cuentas demo creadas: **Administración**, **Secretaría** y **Aprobador**; credenciales en archivo local ignorado por Git.
+- Roles disponibles: **Administración**, **Secretaría** y **Aprobador**.
+- Administración puede crear otras cuentas administrativas desde el panel.
+- Los perfiles admiten un campo `position` para mostrar un cargo como **Presidente** sin alterar el rol interno ni los permisos.
+- Administración puede consultar los correos registrados al boletín, sus categorías, estado de confirmación y fecha de actualización.
 - Auth, roles, persistencia, publicación y Web Push probados contra Supabase y la API pública.
 - El correo fue migrado desde Resend a **Azure Communication Services Email**.
 - El **25 de octubre de 2026** se validó en producción el flujo completo con una cuenta real `@alumnos.uda.cl`: confirmación de suscripción recibida y aviso posterior recibido correctamente.
@@ -24,9 +27,60 @@ La revisión es opcional por aviso:
 4. El Aprobador puede **Aprobar y publicar** o **Solicitar cambios**.
 5. Un aviso con cambios solicitados vuelve a Secretaría, que puede corregirlo y decidir nuevamente entre publicar o enviarlo a revisión.
 
-Administración gestiona cuentas y puede intervenir en el contenido cuando sea necesario.
+Administración gestiona cuentas, puede crear otras cuentas con rol `owner`, consulta el registro del boletín y puede intervenir en el contenido cuando sea necesario.
 
 Las notificaciones se generan cuando el aviso pasa a `published`, independientemente de si se publicó directamente o después de una revisión.
+
+## Roles internos y cargos visibles
+
+Los permisos continúan controlados exclusivamente por `portal_profiles.role`:
+
+- `owner` → Administración.
+- `editor` → Secretaría.
+- `approver` → Aprobador.
+
+El campo `portal_profiles.position` es únicamente descriptivo. Permite mostrar cargos como **Presidente**, **Vicepresidente** o **Encargado de Comunicaciones** sin crear roles técnicos adicionales.
+
+Ejemplo:
+
+```text
+name: Fernando Molina
+position: Presidente
+role: owner
+```
+
+En la interfaz se presenta como **Fernando Molina · Presidente**, mientras que el backend lo autoriza como `owner`.
+
+## Gestión de cuentas desde el panel
+
+La sección **Cuentas y roles** está disponible únicamente para `owner`.
+
+Administración puede crear:
+
+- otras cuentas `owner` / Administración;
+- cuentas `editor` / Secretaría;
+- cuentas `approver` / Aprobador.
+
+El flujo de alta crea primero el usuario en Supabase Auth con correo confirmado y luego registra el perfil en `portal_profiles`. Si la creación del perfil falla, la API intenta eliminar el usuario de Auth para evitar cuentas incompletas.
+
+La clave inicial debe tener entre 12 y 128 caracteres y debe entregarse a la persona por un canal seguro.
+
+## Consulta de suscriptores del boletín
+
+El endpoint administrativo `/api/admin/subscribers` requiere una sesión válida y comprueba que el perfil activo tenga rol `owner`.
+
+La respuesta expone únicamente:
+
+```text
+email
+categories
+confirmed
+updatedAt
+```
+
+No se envían al navegador `confirmToken`, `unsubscribeToken`, credenciales, claves de servidor ni datos de Web Push.
+
+La interfaz muestra esta información en **Boletín informativo → Suscriptores por correo**, incluyendo el total y un botón para actualizar la lista.
 
 ## Configuración realizada y pasos para repetirla
 
@@ -34,7 +88,7 @@ Las notificaciones se generan cuando el aviso pasa a `published`, independientem
 2. Copiar `.env.cloud.example` a `.env.cloud` para pruebas locales contra la nube. Guardar las claves privadas únicamente en variables secretas.
 3. Aplicar `supabase/schema.sql` en un proyecto nuevo. Para proyectos ya creados, aplicar las migraciones posteriores en lugar de volver a ejecutar el esquema completo.
 4. Verificar RLS y permisos. Las tablas están protegidas frente a `anon` y `authenticated`; la API de Vercel media el acceso usando la clave del servidor.
-5. Crear la cuenta inicial `owner` y luego las cuentas `editor` y `approver`. En la interfaz, `editor` se muestra como **Secretaría**.
+5. Crear la cuenta inicial `owner`; desde esa cuenta pueden crearse otras cuentas `owner`, `editor` y `approver` desde el panel.
 6. Configurar las variables de Vercel y `PUBLIC_BASE_URL` con la URL definitiva.
 7. Configurar Azure Communication Services Email según la sección de correo de este documento.
 8. Verificar desde el navegador ambos caminos: publicación directa y revisión opcional.
@@ -52,6 +106,18 @@ Se reemplazó el requisito de aprobación obligatoria por un modelo opcional:
 - Administración mantiene control general y gestión de cuentas.
 
 La función PostgreSQL `public.portal_edit_notice` fue actualizada en Supabase y la definición equivalente está versionada en `supabase/schema.sql`.
+
+## Cambio de gestión administrativa aplicado el 25 de octubre de 2026
+
+Se agregó el campo `position` a `portal_profiles` con máximo de 80 caracteres y valor vacío por defecto. La modificación mantiene compatibles todos los perfiles existentes.
+
+También se agregó:
+
+- creación de nuevas cuentas de Administración desde el panel;
+- separación entre cargo visible y rol interno;
+- módulo `lib/accounts.mjs` para operaciones administrativas;
+- consulta protegida de suscriptores del boletín;
+- nueva vista administrativa de correos registrados.
 
 ## Notificaciones
 
@@ -151,11 +217,14 @@ VAPID_SUBJECT=
 - Los reintentos de entrega no tienen todavía un worker automático permanente.
 - El remitente de demostración pertenece al dominio administrado de Azure y no representa una cuenta institucional oficial de la UDA.
 - Azure Communication Services Email se utiliza únicamente como infraestructura de demostración; una implementación oficial debería utilizar un remitente autorizado por la Universidad.
+- La vista de suscriptores contiene direcciones de correo y debe considerarse información administrativa; para un uso institucional se deben definir políticas de privacidad, acceso y retención.
 - Antes de uso institucional: recuperación de cuentas, gestión formal de usuarios, antispam, auditoría, accesibilidad, remitente institucional y continuidad operativa.
 
 ## Comprobaciones de seguridad
 
 RLS está activado en las tablas. Los roles `anon` y `authenticated` no tienen acceso directo a los datos administrativos; la API de Vercel media las operaciones. La función `portal_edit_notice` usa `security invoker`, valida el rol almacenado en `portal_profiles` y no confía en un rol enviado por el navegador.
+
+Los endpoints de gestión de cuentas y suscriptores vuelven a comprobar el rol `owner` en el servidor. Ocultar una sección en el HTML no se utiliza como mecanismo de autorización.
 
 Las claves secretas de Supabase, Azure Communication Services y VAPID no deben incluirse en Git ni exponerse en JavaScript público.
 
