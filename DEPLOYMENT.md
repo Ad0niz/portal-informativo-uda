@@ -3,48 +3,100 @@
 ## Estado
 
 - Supabase creado: `portal-informativo-uda`, referencia `hfsjubvnyyzcqqsvpiei`, región São Paulo.
-- Vercel: proyecto independiente `portal-informativo-uda`, ID `prj_r06CNB7lR08xwXkMUOhyBGi0iQvq`, espacio Proyectos-Red. No enlazar ni desplegar sobre `tryai-gap`.
+- Vercel: proyecto independiente `portal-informativo-uda`.
 - URL pública: https://portal-informativo-uda.vercel.app ; administración: https://portal-informativo-uda.vercel.app/admin .
-- Código en el repositorio privado https://github.com/Ad0niz/portal-informativo-uda ; rama de producción `main` conectada al proyecto existente de Vercel. Los pushes a esa rama inician despliegues automáticos.
-- Adaptador en `api/index.js` y `lib/cloud.mjs`; esquema aplicado desde `supabase/schema.sql`.
-- Variables de servidor configuradas en el proyecto nuevo. Claves privadas guardadas como sensibles en Vercel.
-- Tres cuentas demo creadas; credenciales en `demo-credentials.txt` (ignorado por Git).
-- Comprobado: Auth, roles, borrador privado, aprobación por otra persona, publicación única y archivo contra Supabase y contra la API pública de Vercel. Filtros y detalle comprobados en navegador.
-- El servidor local existente sigue usando JSON; el adaptador de Vercel requiere Supabase y nunca cae silenciosamente al almacenamiento local.
+- Código en el repositorio público https://github.com/Ad0niz/portal-informativo-uda ; rama de producción `main` conectada a Vercel. Los pushes a esa rama inician despliegues automáticos.
+- Adaptador en `api/index.js` y `lib/cloud.mjs`; esquema versionado en `supabase/schema.sql`.
+- Variables de servidor configuradas en Vercel. Las claves privadas se mantienen fuera del repositorio.
+- Tres cuentas demo creadas: **Administración**, **Secretaría** y **Aprobador**; credenciales en archivo local ignorado por Git.
+- Auth, roles, persistencia, publicación, correo y Web Push probados contra Supabase y la API pública.
+- El servidor local sigue usando JSON; el adaptador de Vercel requiere Supabase y nunca cae silenciosamente al almacenamiento local.
+
+## Flujo editorial actual
+
+La revisión es opcional por aviso:
+
+1. Secretaría crea o edita un borrador.
+2. Puede elegir **Publicar ahora** si la información está confirmada o es urgente.
+3. También puede elegir **Enviar a revisión** cuando quiere una segunda validación.
+4. El Aprobador puede **Aprobar y publicar** o **Solicitar cambios**.
+5. Un aviso con cambios solicitados vuelve a Secretaría, que puede corregirlo y decidir nuevamente entre publicar o enviarlo a revisión.
+
+Administración gestiona cuentas y puede intervenir en el contenido cuando sea necesario.
+
+Las notificaciones se generan cuando el aviso pasa a `published`, independientemente de si se publicó directamente o después de una revisión.
 
 ## Configuración realizada y pasos para repetirla
 
-1. Autorizar la conexión al espacio elegido y comprobar que mantiene el plan Hobby, sin prueba Pro ni servicios de pago.
-2. Crear el nuevo proyecto de Vercel y comprobar su ID antes de configurar variables o desplegar.
-3. Copiar `.env.cloud.example` a `.env.cloud`. Obtener la secret key del proyecto nuevo de Supabase en Settings → API Keys. Guardarla solo en ese archivo o en las variables sensibles de Vercel. No incluirla en código público.
-4. Aplicar el esquema a Supabase y revisar los avisos de seguridad. Todas las tablas tienen RLS y no permiten acceso de anon/authenticated; la API del servidor valida la identidad con Supabase Auth y los roles guardados en portal_profiles.
-5. Crear la cuenta inicial mediante Auth Admin y su perfil owner. Crear un editor y un aprobador para comprobar la demo. Usar contraseñas aleatorias y entregarlas en un archivo local ignorado.
-6. Configurar las variables de Vercel, desplegar y asignar PUBLIC_BASE_URL a la dirección definitiva de la demo. Los datos, cuentas y claves del proyecto anterior son independientes.
-7. Verificar desde el navegador: ingreso, borrador, revisión, aprobación por otra persona, aparición pública, persistencia después de otro despliegue, notificación y apertura del aviso.
+1. Crear el proyecto de Supabase y el proyecto de Vercel.
+2. Copiar `.env.cloud.example` a `.env.cloud` para pruebas locales contra la nube. Guardar la Secret Key únicamente en variables privadas.
+3. Aplicar `supabase/schema.sql` en un proyecto nuevo. Para proyectos ya creados, aplicar las migraciones posteriores en lugar de volver a ejecutar el esquema completo.
+4. Verificar RLS y permisos. Las tablas están protegidas frente a `anon` y `authenticated`; la API de Vercel media el acceso usando la clave del servidor.
+5. Crear la cuenta inicial `owner` y luego las cuentas `editor` y `approver`. En la interfaz, `editor` se muestra como **Secretaría**.
+6. Configurar las variables de Vercel y `PUBLIC_BASE_URL` con la URL definitiva.
+7. Verificar desde el navegador ambos caminos: publicación directa y revisión opcional.
+8. Confirmar que la publicación aparece en el portal y que las notificaciones abren el aviso correspondiente.
+
+## Cambio de flujo aplicado el 25 de octubre de 2026
+
+Se reemplazó el requisito de aprobación obligatoria por un modelo opcional:
+
+- `editor` / Secretaría puede publicar directamente borradores propios y avisos con cambios solicitados.
+- Secretaría también puede enviar esos avisos a `pending` para revisión.
+- `approver` no crea contenido; revisa los avisos enviados voluntariamente a revisión.
+- El Aprobador puede publicar o devolver el aviso con una observación.
+- Administración mantiene control general y gestión de cuentas.
+
+La función PostgreSQL `public.portal_edit_notice` fue actualizada en Supabase y la definición equivalente está versionada en `supabase/schema.sql`.
 
 ## Notificaciones
 
-Web Push usa claves VAPID y la URL del portal como VAPID_SUBJECT. Requiere HTTPS y permiso del navegador. Prueba real completada el 25 de octubre de 2026: suscripción guardada, envío aceptado por el proveedor, recepción y apertura del aviso confirmadas por el usuario. Incluye el proveedor alternativo de Chromium jmt17.google.com. La interfaz espera la activación del service worker y limita las esperas del permiso y de la suscripción.
+Web Push usa claves VAPID y requiere HTTPS y permiso del navegador. La suscripción, recepción y apertura de avisos fueron probadas en producción.
 
-Correo configurado con Resend y remitente de prueba onboarding@resend.dev. El usuario confirmó su suscripción mediante el enlace recibido y luego confirmó la recepción del aviso y la apertura de su enlace. EMAIL_TEST_RECIPIENT restringe los envíos al correo autorizado, sin exponer esa dirección en la API pública. Para habilitar otros destinatarios: verificar un dominio propio en Resend, cambiar NOTIFY_FROM_EMAIL a una dirección de ese dominio, retirar EMAIL_TEST_RECIPIENT y volver a desplegar.
+Correo usa Resend. La demo puede mantenerse restringida a `EMAIL_TEST_RECIPIENT`; para permitir destinatarios generales se debe verificar un dominio propio, actualizar `NOTIFY_FROM_EMAIL`, retirar la restricción de prueba y desplegar nuevamente.
 
-La prueba produjo 1 correo y 1 notificación push aceptados, 0 fallidos y 0 pendientes. Aviso de prueba conservado: https://portal-informativo-uda.vercel.app/?aviso=f5e7593a-dad4-470d-b373-311bb5067166 . El usuario confirmó que ambos llegaron y abren la publicación.
+Los trabajos de entrega se crean cuando un aviso se publica. Cada petición procesa una cantidad limitada de entregas y el panel mantiene la opción **Enviar pendientes** para reintentos administrativos cuando sea necesario. Resend utiliza clave de idempotencia por trabajo.
 
-La aprobación guarda trabajos de envío en la misma transacción. Cada petición envía hasta tres notificaciones; el panel ofrece **Enviar pendientes** para continuar o reintentar. En esta demo no hay un trabajador automático. Push puede repetirse después de una interrupción, usando la misma etiqueta del aviso. Resend recibe una clave de idempotencia por trabajo.
+## Variables principales
+
+```env
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
+PUBLIC_BASE_URL=
+
+RESEND_API_KEY=
+NOTIFY_FROM_EMAIL=
+EMAIL_TEST_RECIPIENT=
+
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=
+```
 
 ## Límites de esta demo
 
-- Sesión limitada a la vigencia del token de Supabase; se vuelve a ingresar al caducar.
-- Edición solamente de borradores propios o avisos devueltos: una corrección de un aviso publicado necesita un nuevo aviso y revisión.
-- Listado público hasta 200 avisos y panel hasta 500; paginación pendiente para uso institucional.
-- Antes de uso real: recuperación de cuentas, gestión de bajas, antispam de suscripciones, procesamiento automático de envíos y revisión de accesibilidad.
+- La sesión está limitada a la vigencia del token de Supabase.
+- Los avisos publicados se archivan en lugar de eliminarse desde el flujo normal.
+- Listado público limitado a 200 avisos y panel a 500; paginación pendiente para uso institucional.
+- Los reintentos de entrega no tienen todavía un worker automático permanente.
+- Antes de uso institucional: recuperación de cuentas, gestión formal de usuarios, antispam, auditoría, accesibilidad y continuidad operativa.
 
 ## Comprobaciones de seguridad
 
-RLS activado en las cinco tablas. Los roles anon y authenticated no tienen SELECT directo; la API de Vercel media el acceso. El asesor de Supabase informa de RLS sin políticas (intencional en este modelo de acceso exclusivo del servidor) y protección contra contraseñas filtradas desactivada. Se usaron claves demo aleatorias; revisar la [protección de contraseñas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) antes de uso institucional. [Detalle del aviso RLS](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+RLS está activado en las tablas. Los roles `anon` y `authenticated` no tienen acceso directo a los datos administrativos; la API de Vercel media las operaciones. La función `portal_edit_notice` usa `security invoker`, valida el rol almacenado en `portal_profiles` y no confía en un rol enviado por el navegador.
+
+Las claves secretas de Supabase, Resend y VAPID no deben incluirse en Git ni exponerse en JavaScript público.
 
 ## Pruebas reproducibles
 
 - `npm test`: pruebas locales de autorización, origen y validación de proveedores push.
-- `node scripts/cloud-smoke.mjs`: integración real con Supabase usando `.env.cloud`.
-- Establecer `CLOUD_TEST_URL=https://portal-informativo-uda.vercel.app` y ejecutar el mismo script para probar el despliegue real. Crea un aviso técnico y lo archiva al terminar; no ejecutar con suscriptores reales sin planificar los envíos.
+- `node scripts/cloud-smoke.mjs`: integración contra Supabase usando `.env.cloud`.
+- Con `CLOUD_TEST_URL=https://portal-informativo-uda.vercel.app`, el script puede probar la API desplegada. Evitar ejecutar pruebas que publiquen avisos cuando existan suscriptores reales sin planificar las notificaciones.
+
+Las pruebas deberían cubrir ambos flujos editoriales:
+
+```text
+Secretaría → publicar directamente
+Secretaría → enviar a revisión → Aprobador → publicar / solicitar cambios
+```
