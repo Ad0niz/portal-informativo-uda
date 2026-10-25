@@ -10,7 +10,8 @@
 - Variables de servidor configuradas en Vercel. Las claves privadas se mantienen fuera del repositorio.
 - Tres cuentas demo creadas: **Administración**, **Secretaría** y **Aprobador**; credenciales en archivo local ignorado por Git.
 - Auth, roles, persistencia, publicación y Web Push probados contra Supabase y la API pública.
-- El correo fue migrado desde Resend a Azure Communication Services Email. La infraestructura Azure quedó configurada y el flujo de recepción con destinatarios reales debe validarse después de cada cambio relevante del proveedor o credenciales.
+- El correo fue migrado desde Resend a **Azure Communication Services Email**.
+- El **25 de octubre de 2026** se validó en producción el flujo completo con una cuenta real `@alumnos.uda.cl`: confirmación de suscripción recibida y aviso posterior recibido correctamente.
 - El servidor local sigue usando JSON; el adaptador de Vercel requiere Supabase y nunca cae silenciosamente al almacenamiento local.
 
 ## Flujo editorial actual
@@ -38,6 +39,7 @@ Las notificaciones se generan cuando el aviso pasa a `published`, independientem
 7. Configurar Azure Communication Services Email según la sección de correo de este documento.
 8. Verificar desde el navegador ambos caminos: publicación directa y revisión opcional.
 9. Confirmar que la publicación aparece en el portal y que las notificaciones abren el aviso correspondiente.
+10. Realizar una prueba de suscripción con un correo real accesible antes de una demostración importante.
 
 ## Cambio de flujo aplicado el 25 de octubre de 2026
 
@@ -74,7 +76,7 @@ Recursos Azure creados para esta demo:
 
 El dominio administrado por Azure permite realizar la demostración sin comprar un dominio propio ni depender de una cuenta personal. Para una eventual adopción institucional, el remitente debería reemplazarse por uno autorizado por la Universidad.
 
-La API de Vercel utiliza `lib/email.mjs`, que firma las peticiones hacia Azure con la clave incluida en la connection string. La clave nunca se envía al navegador.
+La API de Vercel utiliza `lib/email.mjs`, que firma las peticiones hacia Azure usando la credencial incluida en la connection string. La clave nunca se envía al navegador.
 
 Variables requeridas:
 
@@ -86,9 +88,44 @@ PUBLIC_BASE_URL=
 
 `AZURE_COMMUNICATION_CONNECTION_STRING` debe almacenarse como secreto. `AZURE_EMAIL_SENDER` puede almacenarse como configuración no sensible.
 
-La restricción `EMAIL_TEST_RECIPIENT` ya no forma parte de la lógica del portal: cualquier dirección con formato válido puede solicitar el correo de confirmación durante la demo. Las variables antiguas `RESEND_API_KEY`, `NOTIFY_FROM_EMAIL` y `EMAIL_TEST_RECIPIENT` pueden retirarse de Vercel una vez validado satisfactoriamente el envío por Azure.
+La restricción `EMAIL_TEST_RECIPIENT` ya no forma parte de la lógica del portal. Cualquier dirección con formato válido puede solicitar el correo de confirmación durante la demo.
+
+Resend y las variables `RESEND_API_KEY`, `NOTIFY_FROM_EMAIL` y `EMAIL_TEST_RECIPIENT` **ya no forman parte de la configuración activa requerida**.
 
 Los trabajos de entrega se crean cuando un aviso se publica. Cada petición procesa una cantidad limitada de entregas y el panel mantiene la opción **Enviar pendientes** para reintentos administrativos cuando sea necesario. La base de datos evita duplicar trabajos mediante la combinación única `(announcement_id, channel, recipient)`, y las peticiones a Azure incluyen un identificador de cliente para correlación.
+
+## Validación real de correo — 25/10/2026
+
+Se realizó una prueba completa en producción usando una cuenta real de estudiante `@alumnos.uda.cl`.
+
+Flujo validado:
+
+```text
+Portal público
+   ↓
+Suscripción por correo
+   ↓
+Azure Communication Services Email
+   ↓
+Correo de confirmación recibido ✅
+   ↓
+Confirmación de la suscripción ✅
+   ↓
+Publicación de aviso desde el panel
+   ↓
+Trabajo de entrega generado en Supabase
+   ↓
+Correo del nuevo aviso recibido ✅
+```
+
+El mensaje recibido incluyó:
+
+- asunto con el título del aviso;
+- resumen del anuncio;
+- enlace **Leer aviso**;
+- enlace **Dejar de recibir correos**.
+
+Con esta prueba se confirmó que el portal puede enviar notificaciones de correo reales en tiempo de ejecución a destinatarios externos al dominio administrado de Azure.
 
 ## Variables principales
 
@@ -113,6 +150,7 @@ VAPID_SUBJECT=
 - Listado público limitado a 200 avisos y panel a 500; paginación pendiente para uso institucional.
 - Los reintentos de entrega no tienen todavía un worker automático permanente.
 - El remitente de demostración pertenece al dominio administrado de Azure y no representa una cuenta institucional oficial de la UDA.
+- Azure Communication Services Email se utiliza únicamente como infraestructura de demostración; una implementación oficial debería utilizar un remitente autorizado por la Universidad.
 - Antes de uso institucional: recuperación de cuentas, gestión formal de usuarios, antispam, auditoría, accesibilidad, remitente institucional y continuidad operativa.
 
 ## Comprobaciones de seguridad
@@ -134,11 +172,12 @@ Secretaría → publicar directamente
 Secretaría → enviar a revisión → Aprobador → publicar / solicitar cambios
 ```
 
-Para validar el correo en producción:
+Para validar nuevamente el correo en producción:
 
 1. Abrir el portal público.
 2. Seleccionar **Recibir por correo**.
-3. Ingresar una dirección real accesible, por ejemplo una cuenta `@alumnos.uda.cl` utilizada con autorización para la prueba.
+3. Ingresar una dirección real accesible utilizada con autorización para la prueba.
 4. Seleccionar categorías y enviar la confirmación.
 5. Abrir el correo recibido y confirmar la suscripción.
-6. Publicar un aviso de prueba de una categoría suscrita y comprobar la recepción del segundo mensaje.
+6. Publicar un aviso de prueba de una categoría suscrita.
+7. Comprobar la recepción del segundo mensaje y sus enlaces.
