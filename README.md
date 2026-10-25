@@ -1,6 +1,6 @@
 # Panel Informativo Derecho UDA
 
-Portal de avisos académicos para estudiantes de Derecho de la Universidad de Atacama. Permite consultar información relevante, filtrar avisos por categoría y administrar publicaciones mediante un flujo de revisión con roles diferenciados. También incorpora notificaciones por correo electrónico y Web Push.
+Portal de avisos académicos para estudiantes de Derecho de la Universidad de Atacama. Permite consultar información relevante, filtrar avisos por categoría y administrar publicaciones mediante roles diferenciados. También incorpora notificaciones por correo electrónico y Web Push.
 
 ## Demo desplegada
 
@@ -10,7 +10,7 @@ Portal de avisos académicos para estudiantes de Derecho de la Universidad de At
 - Hosting y API: Vercel.
 - Correo electrónico: Resend.
 - Notificaciones del navegador: Web Push con VAPID.
-- Tres cuentas demo creadas: **administrador**, **redactor** y **aprobador**. Las credenciales se mantienen fuera del repositorio.
+- Tres cuentas demo creadas: **Administración**, **Secretaría** y **Aprobador**. Las credenciales se mantienen fuera del repositorio.
 - Correo y Web Push configurados y probados en producción.
 
 La configuración técnica, las pruebas realizadas y las consideraciones para producción están documentadas en `DEPLOYMENT.md`.
@@ -19,11 +19,30 @@ La configuración técnica, las pruebas realizadas y las consideraciones para pr
 
 El sistema utiliza tres roles:
 
-- **Administrador:** gestiona las cuentas con acceso al panel y puede supervisar las publicaciones.
-- **Redactor:** crea y edita borradores y los envía a revisión.
-- **Aprobador:** revisa los avisos enviados y puede devolverlos con observaciones o publicarlos.
+- **Administración:** gestiona las cuentas con acceso al panel, supervisa el contenido y puede intervenir cuando sea necesario.
+- **Secretaría:** crea, edita, publica, archiva y elimina borradores de sus avisos. Puede publicar inmediatamente o enviar un aviso a revisión si necesita una segunda validación.
+- **Aprobador:** participa únicamente cuando un aviso fue enviado a revisión. Puede aprobarlo y publicarlo o solicitar cambios antes de su publicación.
 
-Un aviso no puede ser aprobado por la misma persona que lo redactó. Cuando se publica, aparece en el portal y se generan las notificaciones correspondientes para las personas suscritas a esa categoría.
+La aprobación es **opcional por aviso**.
+
+```text
+Borrador
+   │
+   ├── Publicar ahora ───────────────► Publicado
+   │
+   └── Enviar a revisión
+             │
+             ├── Aprobar y publicar ─► Publicado
+             │
+             └── Solicitar cambios ──► Cambios solicitados
+                                         │
+                                         ├── Publicar ahora
+                                         └── Volver a revisión
+```
+
+Esto permite publicar rápidamente cambios urgentes, como suspensiones de clases o cambios de sala, sin perder la posibilidad de solicitar revisión cuando la información o la redacción aún no están completamente confirmadas.
+
+Cuando un aviso se publica, aparece en el portal y se generan las notificaciones correspondientes para las personas suscritas a esa categoría.
 
 ## Código y actualizaciones
 
@@ -119,6 +138,6 @@ El proyecto también cuenta con pruebas de integración para validar el flujo co
 
 El proyecto surge como una propuesta para modernizar el acceso a los avisos académicos que anteriormente se publicaban en [El Panel Informativo](https://secretariaderecho.blogspot.com/).
 
-El objetivo es centralizar cancelaciones de clases, cambios de sala, evaluaciones, convocatorias y comunicados en una interfaz más simple para los estudiantes, incorporando además un flujo editorial con revisión y notificaciones automáticas.
+El objetivo es centralizar cancelaciones de clases, cambios de sala, evaluaciones, convocatorias y comunicados en una interfaz más simple para los estudiantes, incorporando además notificaciones automáticas y una revisión editorial opcional cuando sea necesaria.
 
 Actualmente corresponde a una **demo funcional / prototipo independiente**. Su adopción como canal institucional oficial requiere la validación de la Universidad de Atacama y la definición de responsables editoriales.
