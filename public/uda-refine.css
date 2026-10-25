@@ -11,6 +11,8 @@
   --gold:#ffc627;
   --uda-gold:#ffc627;
   --uda-green:#264c59;
+  --priority-red:#b83f2d;
+  --priority-red-soft:#f9e5e1;
   --shadow:0 18px 48px rgba(38,76,89,.10)
 }
 
@@ -34,6 +36,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .hero-rule{padding:13px 0 15px}
 .live-dot{background:var(--uda-gold);box-shadow:0 0 0 4px rgba(255,198,39,.18)}
 .feature-category{color:#8a6500}
+.hero-feature.feature-urgent .live-dot{background:var(--priority-red);box-shadow:0 0 0 4px rgba(184,63,45,.14)}
+.hero-feature.feature-urgent #feature-label{color:var(--priority-red)}
 
 /* Sección de avisos */
 .notice-section{padding-top:62px}
@@ -54,7 +58,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 .notice-card:hover .notice-arrow{background:var(--navy);border-color:var(--navy);transform:translate(2px,-2px)}
 .notice-day{color:var(--navy)}
 .category-pill{background:#e6eeee;color:#264c59}
-.priority-pill{background:#fff1bd;color:#725400}
+.priority-pill{background:var(--priority-red-soft);color:var(--priority-red)}
 .demo-pill{background:#f5f0df;color:#705f28}
 
 /* Suscripciones: cada canal explica qué hace antes del CTA */
