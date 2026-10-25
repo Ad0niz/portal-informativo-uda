@@ -26,13 +26,17 @@ function toast(text) {
   toastTimer = setTimeout(() => box.classList.remove('show'), 4000);
 }
 
+function visibleName(user) {
+  return `${html(user.name)}${user.position ? ` · ${html(user.position)}` : ''}`;
+}
+
 function updateAuth(user) {
   state.user = user;
   $('#login-view').hidden = Boolean(user);
   $('#dashboard').hidden = !user;
   $('#logout').hidden = !user;
   if (!user) return;
-  $('#admin-user').innerHTML = `<strong>${html(user.name)}</strong>${html(roleLabels[user.role] || user.role)}`;
+  $('#admin-user').innerHTML = `<strong>${visibleName(user)}</strong>${html(roleLabels[user.role] || user.role)}`;
   $('#user-section').hidden = user.role !== 'owner';
   $('#editor-card').hidden = user.role === 'approver';
 }
@@ -108,8 +112,13 @@ async function loadAnnouncements() {
 
 async function loadUsers() {
   if (state.user.role !== 'owner') return;
-  const users = await api('/api/admin/users');
-  $('#users-list').innerHTML = users.map(user => `<div class="user-row"><div><strong>${html(user.name)}</strong><small>${html(user.username)}</small></div><span>${html(roleLabels[user.role] || user.role)}</span></div>`).join('');
+  const users = await api('/api/admin/accounts');
+  const current = users.find(user => user.id === state.user.id);
+  if (current) {
+    state.user = { ...state.user, position: current.position || '' };
+    $('#admin-user').innerHTML = `<strong>${visibleName(state.user)}</strong>${html(roleLabels[state.user.role] || state.user.role)}`;
+  }
+  $('#users-list').innerHTML = users.map(user => `<div class="user-row"><div><strong>${visibleName(user)}</strong><small>${html(user.username)}</small></div><span>${html(roleLabels[user.role] || user.role)}</span></div>`).join('');
 }
 
 function deliveryToast(prefix, result) {
@@ -186,7 +195,7 @@ $('#user-form').addEventListener('submit', async event => {
   const button = form.querySelector('button[type="submit"]');
   button.disabled = true; message('#user-message', 'Creando cuenta…');
   try {
-    await api('/api/admin/users', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+    await api('/api/admin/accounts', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
     form.reset(); await loadUsers(); message('#user-message', 'Cuenta creada.');
   } catch (error) { message('#user-message', error.message, true); }
   finally { button.disabled = false; }
