@@ -1,49 +1,124 @@
 # Panel Informativo Derecho UDA
 
-Primera versión funcional de un portal de avisos para estudiantes de Derecho de la Universidad de Atacama. Permite consultar avisos, filtrar por tema y administrarlos desde un panel protegido. Admite notificaciones por correo y notificaciones clicables del navegador.
+Portal de avisos académicos para estudiantes de Derecho de la Universidad de Atacama. Permite consultar información relevante, filtrar avisos por categoría y administrar publicaciones mediante un flujo de revisión con roles diferenciados. También incorpora notificaciones por correo electrónico y Web Push.
 
 ## Demo desplegada
 
 - Portal: https://portal-informativo-uda.vercel.app
-- Panel: https://portal-informativo-uda.vercel.app/admin
-- Cuentas demo: archivo local privado `demo-credentials.txt`.
-- El despliegue usa Supabase Auth y Postgres; configuración, pruebas y pendientes en `DEPLOYMENT.md`.
-- Correo y Web Push configurados y probados: el titular confirmó que recibió ambos y que abren el aviso. Por ahora, el correo está limitado a la dirección de prueba autorizada de Resend.
+- Panel de administración: https://portal-informativo-uda.vercel.app/admin
+- Base de datos y autenticación: Supabase PostgreSQL + Supabase Auth.
+- Hosting y API: Vercel.
+- Correo electrónico: Resend.
+- Notificaciones del navegador: Web Push con VAPID.
+- Tres cuentas demo creadas: **administrador**, **redactor** y **aprobador**. Las credenciales se mantienen fuera del repositorio.
+- Correo y Web Push configurados y probados en producción.
+
+La configuración técnica, las pruebas realizadas y las consideraciones para producción están documentadas en `DEPLOYMENT.md`.
+
+## Flujo editorial
+
+El sistema utiliza tres roles:
+
+- **Administrador:** gestiona las cuentas con acceso al panel y puede supervisar las publicaciones.
+- **Redactor:** crea y edita borradores y los envía a revisión.
+- **Aprobador:** revisa los avisos enviados y puede devolverlos con observaciones o publicarlos.
+
+Un aviso no puede ser aprobado por la misma persona que lo redactó. Cuando se publica, aparece en el portal y se generan las notificaciones correspondientes para las personas suscritas a esa categoría.
 
 ## Código y actualizaciones
 
-Repositorio privado: https://github.com/Ad0niz/portal-informativo-uda . La rama `main` está conectada al proyecto existente de Vercel. Cada push a `main` inicia el despliegue del portal.
+Repositorio público: https://github.com/Ad0niz/portal-informativo-uda
 
-Para trabajar desde otro equipo: clonar el repositorio, ejecutar `npm ci` y consultar `DEPLOYMENT.md` para la configuración. Las claves y cuentas demo se entregan por separado: `.env`, `.env.cloud`, `demo-credentials.txt`, los datos locales y las capturas no se incluyen en Git.
+La rama `main` está conectada al proyecto de Vercel. Cada push a `main` inicia automáticamente un nuevo despliegue.
 
-Antes de subir cambios, ejecutar `npm test`; después crear un commit y ejecutar `git push`. La configuración de producción permanece en Vercel y los datos permanecen en Supabase.
+Para trabajar desde otro equipo:
+
+1. Clonar el repositorio.
+2. Ejecutar `npm ci`.
+3. Consultar `DEPLOYMENT.md` para configurar los servicios y variables de entorno.
+4. Ejecutar `npm test` antes de publicar cambios.
+
+Las claves privadas, variables de entorno, credenciales demo, datos locales y evidencias de prueba no se incluyen en Git.
+
+## Arquitectura de producción
+
+```text
+Estudiante / Encargado
+        │
+        ▼
+      Vercel
+ ┌──────┴─────────┐
+ │                │
+Portal público    API / Panel
+ │                │
+ │                ├── Supabase Auth
+ │                ├── Supabase PostgreSQL
+ │                ├── Resend
+ │                └── Web Push
+ │
+ └── Avisos publicados
+```
+
+El despliegue en Vercel utiliza `lib/cloud.mjs` para acceder a Supabase. La aplicación no depende del almacenamiento local de Vercel para conservar información.
 
 ## Iniciar la versión local con JSON
 
-Requiere Node.js 22 o posterior. Ejecuta `npm install` antes de iniciar.
+La versión de desarrollo local puede ejecutarse sin Supabase y utiliza `data/portal.json` como almacenamiento.
 
-1. Ejecuta `npm run setup`. Genera `.env`, una clave inicial segura y las claves del navegador. Anota la clave que aparece una sola vez en la terminal. También puedes copiar `.env.example` a `.env` y configurar todo manualmente.
-2. Ejecuta `npm start`.
-3. Abre `http://localhost:3000`. El panel de publicación está en `/admin`; ingresa con el usuario `admin` y la clave inicial.
+Requiere Node.js 22 o posterior.
 
-Si no configuras una clave, el portal público funciona con avisos de demostración y el acceso al panel queda deshabilitado. Después del primer inicio, cambiar `ADMIN_PASSWORD` no cambia la clave de la cuenta guardada.
+1. Ejecuta `npm install`.
+2. Ejecuta `npm run setup` para generar `.env`, una clave inicial segura y las claves VAPID. También puedes copiar `.env.example` a `.env` y configurar las variables manualmente.
+3. Ejecuta `npm start`.
+4. Abre `http://localhost:3000`.
+5. El panel local está disponible en `http://localhost:3000/admin`.
 
-## Publicar y notificar
+La versión local y la versión desplegada en Vercel utilizan sistemas de autenticación y almacenamiento independientes.
 
-La cuenta `admin` puede crear cuentas de tipo **redactor** y **aprobador**. Un redactor crea un borrador y lo envía a revisión. Un aprobador distinto de quien lo redactó puede devolverlo con una nota o publicarlo. Al publicar, se envían alertas a las personas suscritas a esa categoría.
+## Notificaciones por correo
 
-Para correo se requiere `RESEND_API_KEY`, `NOTIFY_FROM_EMAIL` (dominio verificado) y `PUBLIC_BASE_URL` con dominio público. La suscripción usa confirmación por correo e incluye un enlace para darse de baja.
+Las suscripciones por correo utilizan Resend. El usuario selecciona las categorías que desea recibir, confirma su dirección mediante un enlace y posteriormente recibe los nuevos avisos correspondientes a sus preferencias.
 
-Para alertas del navegador, `npm run setup` genera las claves VAPID. Antes de publicar, reemplaza el `VAPID_SUBJECT` de ejemplo por un correo de contacto real y configura `PUBLIC_BASE_URL`. Se necesita HTTPS en producción; `localhost` sirve para desarrollo. Cada visitante elige las categorías y autoriza el permiso en su navegador. El aviso abre la publicación correspondiente al hacer clic.
+Los correos incluyen un enlace directo al aviso y una opción para cancelar la suscripción.
 
-En esta versión local los avisos, cuentas y suscripciones se guardan en `data/portal.json`. El despliegue de Vercel utiliza la API independiente de `lib/cloud.mjs` y guarda los datos en Supabase; no carga este JSON ni las contraseñas locales. Las cuentas locales y las cuentas de Supabase son independientes.
+Variables principales:
 
-Los avisos iniciales son **ejemplos ficticios** para revisar la interfaz. Deben eliminarse desde el panel antes de usarlo como canal oficial.
+```env
+RESEND_API_KEY=
+NOTIFY_FROM_EMAIL=
+PUBLIC_BASE_URL=
+```
+
+## Web Push
+
+Las notificaciones del navegador utilizan Web Push y claves VAPID. Cada visitante puede seleccionar las categorías de interés y autorizar las notificaciones en su dispositivo.
+
+Al pulsar una notificación, se abre directamente el aviso correspondiente en el portal.
+
+Variables principales:
+
+```env
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=
+```
+
+HTTPS es obligatorio en producción; `localhost` funciona para desarrollo.
 
 ## Pruebas
 
-`npm test`
+Ejecutar las pruebas locales con:
+
+```bash
+npm test
+```
+
+El proyecto también cuenta con pruebas de integración para validar el flujo contra Supabase y el despliegue real en Vercel. Consulta `DEPLOYMENT.md` para más información.
 
 ## Contexto
 
-El proyecto responde a la solicitud de reemplazar el blog [El Panel Informativo](https://secretariaderecho.blogspot.com/) con acceso más simple a cancelaciones, cambios de sala, evaluaciones y comunicados. Es un prototipo independiente; su publicación como canal oficial requiere validación de la universidad, dominio y responsables editoriales.
+El proyecto surge como una propuesta para modernizar el acceso a los avisos académicos que anteriormente se publicaban en [El Panel Informativo](https://secretariaderecho.blogspot.com/).
+
+El objetivo es centralizar cancelaciones de clases, cambios de sala, evaluaciones, convocatorias y comunicados en una interfaz más simple para los estudiantes, incorporando además un flujo editorial con revisión y notificaciones automáticas.
+
+Actualmente corresponde a una **demo funcional / prototipo independiente**. Su adopción como canal institucional oficial requiere la validación de la Universidad de Atacama y la definición de responsables editoriales.
