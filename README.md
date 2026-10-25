@@ -8,10 +8,10 @@ Portal de avisos académicos para estudiantes de Derecho de la Universidad de At
 - Panel de administración: https://portal-informativo-uda.vercel.app/admin
 - Base de datos y autenticación: Supabase PostgreSQL + Supabase Auth.
 - Hosting y API: Vercel.
-- Correo electrónico: Resend.
+- Correo electrónico: Azure Communication Services Email.
 - Notificaciones del navegador: Web Push con VAPID.
 - Tres cuentas demo creadas: **Administración**, **Secretaría** y **Aprobador**. Las credenciales se mantienen fuera del repositorio.
-- Correo y Web Push configurados y probados en producción.
+- Web Push configurado y probado en producción. El correo utiliza un dominio administrado por Azure para permitir pruebas con destinatarios reales sin depender de un dominio institucional.
 
 La configuración técnica, las pruebas realizadas y las consideraciones para producción están documentadas en `DEPLOYMENT.md`.
 
@@ -72,13 +72,13 @@ Portal público    API / Panel
  │                │
  │                ├── Supabase Auth
  │                ├── Supabase PostgreSQL
- │                ├── Resend
+ │                ├── Azure Communication Services Email
  │                └── Web Push
  │
  └── Avisos publicados
 ```
 
-El despliegue en Vercel utiliza `lib/cloud.mjs` para acceder a Supabase. La aplicación no depende del almacenamiento local de Vercel para conservar información.
+El despliegue en Vercel utiliza `lib/cloud.mjs` para acceder a Supabase y `lib/email.mjs` para enviar correo mediante Azure Communication Services. La aplicación no depende del almacenamiento local de Vercel para conservar información.
 
 ## Iniciar la versión local con JSON
 
@@ -92,21 +92,25 @@ Requiere Node.js 22 o posterior.
 4. Abre `http://localhost:3000`.
 5. El panel local está disponible en `http://localhost:3000/admin`.
 
-La versión local y la versión desplegada en Vercel utilizan sistemas de autenticación y almacenamiento independientes.
+La versión local y la versión desplegada en Vercel utilizan sistemas de autenticación y almacenamiento independientes. La integración Azure descrita a continuación corresponde al despliegue cloud.
 
 ## Notificaciones por correo
 
-Las suscripciones por correo utilizan Resend. El usuario selecciona las categorías que desea recibir, confirma su dirección mediante un enlace y posteriormente recibe los nuevos avisos correspondientes a sus preferencias.
+En producción las suscripciones por correo utilizan **Azure Communication Services Email**. El usuario selecciona las categorías que desea recibir, confirma su dirección mediante un enlace y posteriormente recibe los nuevos avisos correspondientes a sus preferencias.
+
+Para la demo se utiliza un dominio administrado gratuitamente por Azure (`azurecomm.net`), por lo que no es necesario comprar un dominio propio ni utilizar una cuenta personal como remitente. El remitente visible es del tipo `DoNotReply@<dominio-administrado>.azurecomm.net`.
 
 Los correos incluyen un enlace directo al aviso y una opción para cancelar la suscripción.
 
 Variables principales:
 
 ```env
-RESEND_API_KEY=
-NOTIFY_FROM_EMAIL=
+AZURE_COMMUNICATION_CONNECTION_STRING=
+AZURE_EMAIL_SENDER=
 PUBLIC_BASE_URL=
 ```
+
+La connection string es privada y debe almacenarse únicamente como secreto del servidor. No debe incluirse en Git ni exponerse en JavaScript público.
 
 ## Web Push
 
