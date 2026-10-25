@@ -1,8 +1,8 @@
 const state = { user: null, announcements: [], categories: [], filter: 'all', editingId: null, rejectId: null, cloud: false };
 const $ = selector => document.querySelector(selector);
 const html = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-const statusLabels = { draft: 'Borrador', pending: 'En revisión', rejected: 'Devuelto', published: 'Publicado', archived: 'Archivado' };
-const roleLabels = { owner: 'Administración', editor: 'Redactor', approver: 'Aprobador' };
+const statusLabels = { draft: 'Borrador', pending: 'En revisión', rejected: 'Cambios solicitados', published: 'Publicado', archived: 'Archivado' };
+const roleLabels = { owner: 'Administración', editor: 'Secretaría', approver: 'Aprobador' };
 let toastTimer;
 
 async function api(path, options = {}) {
@@ -20,8 +20,10 @@ function message(selector, text, error = false) {
 
 function toast(text) {
   const box = $('#toast');
-  box.textContent = text; box.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => box.classList.remove('show'), 4000);
+  box.textContent = text;
+  box.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => box.classList.remove('show'), 4000);
 }
 
 function updateAuth(user) {
@@ -32,6 +34,7 @@ function updateAuth(user) {
   if (!user) return;
   $('#admin-user').innerHTML = `<strong>${html(user.name)}</strong>${html(roleLabels[user.role] || user.role)}`;
   $('#user-section').hidden = user.role !== 'owner';
+  $('#editor-card').hidden = user.role === 'approver';
 }
 
 function resetEditor() {
@@ -48,26 +51,45 @@ function editItem(item) {
   for (const name of ['title', 'summary', 'body', 'category', 'eventDate', 'priority']) form.elements[name].value = item[name] || '';
   $('#editor-title').textContent = 'Editar aviso';
   $('#editor-form button[type="submit"]').textContent = 'Guardar cambios';
-  message('#editor-message', item.status === 'published' ? 'Los cambios al aviso publicado se guardan sin enviar nuevas notificaciones.' : '');
+  message('#editor-message', item.status === 'rejected' ? 'Corrige el aviso y luego publícalo o vuelve a enviarlo a revisión.' : '');
   document.querySelector('.editor-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function renderTabs() {
-  const tabs = [['all', 'Todos'], ['pending', 'En revisión'], ['draft', 'Borradores'], ['rejected', 'Devueltos'], ['published', 'Publicados'], ['archived', 'Archivados']];
+  const tabs = [['all', 'Todos'], ['pending', 'En revisión'], ['draft', 'Borradores'], ['rejected', 'Cambios solicitados'], ['published', 'Publicados'], ['archived', 'Archivados']];
   $('#admin-tabs').innerHTML = tabs.map(([value, label]) => `<button type="button" class="admin-tab ${state.filter === value ? 'active' : ''}" data-filter="${value}" aria-pressed="${state.filter === value}">${label}</button>`).join('');
   $('#admin-tabs').querySelectorAll('button').forEach(button => button.addEventListener('click', () => { state.filter = button.dataset.filter; renderList(); }));
 }
 
 function actionsFor(item) {
-  const reviewer = ['owner', 'approver'].includes(state.user.role);
+  const role = state.user.role;
+  const owner = role === 'owner';
+  const secretary = role === 'editor';
+  const approver = role === 'approver';
   const author = item.authorId === state.user.id;
+  const canManageOwn = owner || (secretary && author);
   const buttons = [];
-  if (state.cloud ? author && ['draft','rejected'].includes(item.status) : (reviewer || author) && (reviewer || ['draft', 'rejected'].includes(item.status))) buttons.push(['edit', 'Editar', '']);
-  if (['draft', 'rejected'].includes(item.status) && author) buttons.push(['submit', 'Enviar a revisión', 'primary']);
-  if (item.status === 'pending' && reviewer && !author) { buttons.push(['approve', 'Aprobar y publicar', 'primary']); buttons.push(['reject', 'Devolver', '']); }
-  if (item.status === 'published' && reviewer) buttons.push(['archive', 'Archivar', '']);
-  if (state.cloud && item.status === 'published' && reviewer) buttons.push(['deliver', 'Enviar pendientes', '']);
-  if (['draft', 'rejected'].includes(item.status) && (state.cloud ? author : reviewer || author)) buttons.push(['delete', 'Eliminar', 'danger']);
+
+  if (['draft', 'rejected'].includes(item.status) && canManageOwn) {
+    buttons.push(['edit', 'Editar', '']);
+    buttons.push(['publish', 'Publicar ahora', 'primary']);
+    buttons.push(['submit', 'Enviar a revisión', '']);
+    buttons.push(['delete', 'Eliminar', 'danger']);
+  }
+
+  if (item.status === 'pending') {
+    if ((approver || owner) && !author) {
+      buttons.push(['approve', 'Aprobar y publicar', 'primary']);
+      buttons.push(['reject', 'Solicitar cambios', '']);
+    }
+    if ((secretary && author) || owner) buttons.push(['publish', 'Publicar ahora', 'primary']);
+  }
+
+  if (item.status === 'published' && (owner || (secretary && author))) {
+    buttons.push(['archive', 'Archivar', '']);
+    if (state.cloud) buttons.push(['deliver', 'Enviar pendientes', '']);
+  }
+
   return buttons.map(([action, label, style]) => `<button class="small-button ${style}" type="button" data-action="${action}" data-id="${html(item.id)}">${label}</button>`).join('');
 }
 
@@ -75,7 +97,7 @@ function renderList() {
   renderTabs();
   const items = state.filter === 'all' ? state.announcements : state.announcements.filter(item => item.status === state.filter);
   $('#admin-count').textContent = `${items.length} ${items.length === 1 ? 'aviso' : 'avisos'}`;
-  $('#admin-list').innerHTML = items.length ? items.map(item => `<article class="admin-row"><div class="admin-row-main"><div class="admin-row-meta"><span class="status-pill ${html(item.status)}">${html(statusLabels[item.status] || item.status)}</span><span class="category-pill">${html(item.category)}</span>${item.demo ? '<span class="demo-pill">Demostración</span>' : ''}</div><h3>${html(item.title)}</h3><p>${html(item.authorName || 'Ejemplo inicial')} · ${html(item.summary)}</p>${item.rejectionNote ? `<p class="form-message error">Motivo de devolución: ${html(item.rejectionNote)}</p>` : ''}</div><div class="admin-row-actions">${actionsFor(item)}</div></article>`).join('') : '<div class="admin-empty">No hay avisos en esta sección.</div>';
+  $('#admin-list').innerHTML = items.length ? items.map(item => `<article class="admin-row"><div class="admin-row-main"><div class="admin-row-meta"><span class="status-pill ${html(item.status)}">${html(statusLabels[item.status] || item.status)}</span><span class="category-pill">${html(item.category)}</span>${item.demo ? '<span class="demo-pill">Demostración</span>' : ''}</div><h3>${html(item.title)}</h3><p>${html(item.authorName || 'Ejemplo inicial')} · ${html(item.summary)}</p>${item.rejectionNote ? `<p class="form-message error">Cambios solicitados: ${html(item.rejectionNote)}</p>` : ''}</div><div class="admin-row-actions">${actionsFor(item)}</div></article>`).join('') : '<div class="admin-empty">No hay avisos en esta sección.</div>';
   $('#admin-list').querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => handleAction(button.dataset.action, button.dataset.id)));
 }
 
@@ -87,7 +109,12 @@ async function loadAnnouncements() {
 async function loadUsers() {
   if (state.user.role !== 'owner') return;
   const users = await api('/api/admin/users');
-  $('#users-list').innerHTML = users.map(user => `<div class="user-row"><div><strong>${html(user.name)}</strong><small>${html(user.username)}</small></div><span>${html(roleLabels[user.role])}</span></div>`).join('');
+  $('#users-list').innerHTML = users.map(user => `<div class="user-row"><div><strong>${html(user.name)}</strong><small>${html(user.username)}</small></div><span>${html(roleLabels[user.role] || user.role)}</span></div>`).join('');
+}
+
+function deliveryToast(prefix, result) {
+  const delivery = result.delivery || { emailSent: 0, pushSent: 0, pending: 0 };
+  toast(`${prefix} Correos: ${delivery.emailSent}; navegador: ${delivery.pushSent}.${delivery.error ? ' Reintenta el envío de notificaciones.' : delivery.pending ? ` Pendientes: ${delivery.pending}. Usa Enviar pendientes para continuar.` : ''}`);
 }
 
 async function handleAction(action, id) {
@@ -97,12 +124,17 @@ async function handleAction(action, id) {
   if (action === 'reject') { state.rejectId = id; $('#reject-form').reset(); message('#reject-message', ''); $('#reject-dialog').showModal(); return; }
   if (action === 'delete' && !confirm(`¿Eliminar "${item.title}"?`)) return;
   if (action === 'archive' && !confirm(`¿Archivar "${item.title}"? Dejará de aparecer en el portal.`)) return;
-  if (action === 'approve' && !confirm(`¿Publicar "${item.title}" y enviar las notificaciones a suscriptores?`)) return;
+  if (action === 'approve' && !confirm(`¿Aprobar y publicar "${item.title}"? Se enviarán las notificaciones configuradas.`)) return;
+  if (action === 'publish' && !confirm(`¿Publicar ahora "${item.title}"? Se enviarán las notificaciones configuradas sin requerir aprobación.`)) return;
+
+  const apiAction = action === 'publish' ? 'approve' : action;
   try {
-    const result = await api(`/api/admin/announcements/${encodeURIComponent(id)}${action === 'delete' ? '' : `/${action}`}`, { method: action === 'delete' ? 'DELETE' : 'POST' });
+    const result = await api(`/api/admin/announcements/${encodeURIComponent(id)}${apiAction === 'delete' ? '' : `/${apiAction}`}`, { method: apiAction === 'delete' ? 'DELETE' : 'POST' });
     await loadAnnouncements();
-    if (action === 'approve' || action === 'deliver') toast(`${action === 'approve' ? 'Aviso publicado. ' : ''}Correos: ${result.delivery.emailSent}; navegador: ${result.delivery.pushSent}.${result.delivery.error ? ' Reintenta el envío de notificaciones.' : result.delivery.pending ? ` Pendientes: ${result.delivery.pending}. Usa Enviar pendientes para continuar.` : ''}`);
-    else toast(action === 'submit' ? 'Aviso enviado a revisión.' : action === 'archive' ? 'Aviso archivado.' : 'Aviso eliminado.');
+    if (action === 'approve') deliveryToast('Aviso aprobado y publicado.', result);
+    else if (action === 'publish') deliveryToast('Aviso publicado.', result);
+    else if (action === 'deliver') deliveryToast('Envío procesado.', result);
+    else toast(action === 'submit' ? 'Aviso enviado a revisión opcional.' : action === 'archive' ? 'Aviso archivado.' : 'Aviso eliminado.');
   } catch (error) { toast(error.message); }
 }
 
@@ -143,7 +175,7 @@ $('#reject-form').addEventListener('submit', async event => {
   button.disabled = true; message('#reject-message', 'Guardando…');
   try {
     await api(`/api/admin/announcements/${encodeURIComponent(state.rejectId)}/reject`, { method: 'POST', body: JSON.stringify({ note: form.elements.note.value }) });
-    $('#reject-dialog').close(); await loadAnnouncements(); toast('Aviso devuelto a la persona redactora.');
+    $('#reject-dialog').close(); await loadAnnouncements(); toast('Se solicitaron cambios a Secretaría.');
   } catch (error) { message('#reject-message', error.message, true); }
   finally { button.disabled = false; }
 });
