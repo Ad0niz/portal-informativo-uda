@@ -11,7 +11,9 @@ Reemplazar el flujo de consulta del blog actual por un portal de avisos académi
 | Estudiante | Buscar, filtrar, leer, compartir y suscribirse por tema. |
 | Secretaría | Crear y editar avisos, guardar borradores, publicar directamente, enviar a revisión cuando sea necesario, archivar avisos y eliminar borradores propios. |
 | Aprobador | Revisar únicamente los avisos enviados voluntariamente a revisión, aprobarlos y publicarlos o solicitar cambios con una observación. |
-| Administración | Gestionar cuentas, supervisar contenido y actuar sobre avisos cuando sea necesario. |
+| Administración | Gestionar cuentas, crear otras cuentas de Administración, supervisar contenido, actuar sobre avisos cuando sea necesario y consultar los correos registrados al boletín. |
+
+El sistema diferencia entre **rol interno** y **cargo visible**. El rol determina permisos; el cargo identifica la función de la persona dentro del equipo. Por ejemplo, una persona con cargo **Presidente** puede utilizar el rol interno **Administración** y conservar todos sus permisos administrativos.
 
 La aprobación no es obligatoria. Secretaría puede publicar directamente cuando la información está confirmada o necesita salir con rapidez. Si existen dudas sobre el contenido, datos o redacción, puede solicitar una segunda revisión.
 
@@ -24,6 +26,27 @@ borrador → publicar → publicado
 ```
 
 Este modelo evita que la revisión se convierta en un cuello de botella para avisos urgentes, pero mantiene una instancia de control editorial disponible cuando el equipo la necesita.
+
+## Gestión de cuentas
+
+Desde el panel, una cuenta de Administración puede crear nuevas cuentas con los siguientes roles:
+
+- **Administración:** control general, gestión de cuentas y consulta del boletín.
+- **Secretaría:** redacción y publicación.
+- **Aprobador:** revisión opcional.
+
+Al crear una cuenta puede indicarse un **cargo visible** opcional, por ejemplo Presidente, Vicepresidente o Encargado de Comunicaciones. Ese cargo no modifica los permisos asociados al rol.
+
+## Registro del boletín
+
+Administración dispone de una vista de suscriptores por correo. La interfaz expone únicamente la información necesaria para la gestión:
+
+- correo registrado;
+- temas o categorías seleccionadas;
+- estado de confirmación;
+- fecha de última actualización.
+
+Los tokens de confirmación y baja, las credenciales y los datos técnicos de Web Push no se muestran en el panel.
 
 ## Contenido de cada aviso
 
@@ -92,9 +115,12 @@ Aprobador
 
 Administración
    ├── gestiona cuentas
+   ├── puede crear otras cuentas administrativas
+   ├── utiliza cargos visibles independientes del rol
+   ├── consulta suscriptores del boletín
    └── supervisa el contenido
 ```
 
 El correo y Web Push permiten que la demostración no dependa de que el desarrollador esté presente durante la presentación.
 
-La publicación como canal institucional oficial requiere validación de la Universidad de Atacama, definición de responsables editoriales, políticas de acceso, un remitente institucional autorizado y continuidad operativa.
+La publicación como canal institucional oficial requiere validación de la Universidad de Atacama, definición de responsables editoriales, políticas de acceso, tratamiento adecuado de datos personales, un remitente institucional autorizado y continuidad operativa.
