@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+!.env.cloud.example
+.vercel/
+demo-credentials.txt
+data/*.json
+!data/.gitkeep
+node_modules/
+.npm-cache/
+evidence/

@@ -1,0 +1,11 @@
+.env
+.env.*
+.git
+.npm-cache
+node_modules
+data
+test
+scripts
+demo-credentials.txt
+server.mjs
+supabase
