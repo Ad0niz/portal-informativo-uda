@@ -94,9 +94,8 @@ function checkedCategories(form) {
 }
 
 function showEmailForm() {
-  $('#subscribe-content').innerHTML = `<div class="dialog-body"><span class="section-kicker">AVISOS POR CORREO</span><h2>Recibe solo lo que te interesa.</h2><p class="dialog-summary">Te enviaremos un correo para confirmar tu suscripción. Puedes darte de baja desde cualquier aviso.</p><form id="email-form"><div class="field"><label for="email">Correo electrónico</label><input id="email" name="email" type="email" autocomplete="email" required placeholder="tu.correo@ejemplo.cl"></div><div class="field"><span>Temas de interés</span>${categoryChecks()}</div><button class="button button-dark" type="submit">Enviar confirmación ↗</button><p class="form-message" id="form-message" role="status"></p></form></div>`;
+  $('#subscribe-content').innerHTML = `<div class="dialog-body"><span class="section-kicker">AVISOS POR CORREO</span><h2>Recibe solo lo que te interesa.</h2><p class="dialog-summary">Te enviaremos un correo para confirmar tu suscripción. Puedes darte de baja desde cualquier aviso.</p><form id="email-form"><div class="field"><label for="email">Correo electrónico</label><input id="email" name="email" type="email" autocomplete="email" required placeholder="nombre.apellido@alumnos.uda.cl"></div><div class="field"><span>Temas de interés</span>${categoryChecks()}</div><button class="button button-dark" type="submit">Enviar confirmación ↗</button><p class="form-message" id="form-message" role="status"></p></form></div>`;
   $('#subscribe-dialog').showModal();
-  if (state.config.emailTestMode) $('#subscribe-content .dialog-summary').textContent = 'Demo: el envío está habilitado solo para el correo de prueba autorizado. Recibirás un enlace para confirmar tu suscripción.';
   $('#email-form').addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
