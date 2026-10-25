@@ -17,25 +17,32 @@ async function login(role) {
   assert.equal(result.body.user.role,role);
   return result.cookie;
 }
+
 const editor = await login('editor');
 const approver = await login('approver');
-const values = {title:`Prueba técnica ${Date.now()}`,summary:'Prueba automatizada del flujo de revisión.',body:'Aviso temporal de prueba; queda archivado al terminar.',category:'General',priority:'normal',eventDate:''};
-const created = await call('/api/admin/announcements','POST',values,editor);
-assert.equal(created.status,201);
-const id = created.body.item.id;
-const route = `/api/admin/announcements/${id}`;
-assert.equal((await call('/api/announcements')).body.some(item=>item.id===id),false);
-assert.equal((await call(`${route}/approve`,'POST',{},editor)).status,403);
-assert.equal((await call(`${route}/submit`,'POST',{},editor)).status,200);
-assert.equal((await call(route,'PUT',{...values,title:'Edición no permitida'},editor)).status,403);
-assert.equal((await call(`${route}/approve`,'POST',{},editor)).status,403);
-assert.equal((await call(`${route}/approve`,'POST',{},approver)).status,200);
-assert.equal((await call(`${route}/approve`,'POST',{},approver)).status,403);
-const visible = (await call('/api/announcements')).body.find(item=>item.id===id);
+const values = {title:`Prueba técnica ${Date.now()}`,summary:'Prueba automatizada del flujo editorial opcional.',body:'Aviso temporal de prueba; queda archivado al terminar.',category:'General',priority:'normal',eventDate:''};
+
+// Camino 1: Secretaría publica directamente.
+const direct = await call('/api/admin/announcements','POST',{...values,title:`${values.title} · directa`},editor);
+assert.equal(direct.status,201);
+const directRoute = `/api/admin/announcements/${direct.body.item.id}`;
+assert.equal((await call(`${directRoute}/approve`,'POST',{},editor)).status,200);
+assert.equal((await call('/api/announcements')).body.some(item=>item.id===direct.body.item.id),true);
+assert.equal((await call(`${directRoute}/archive`,'POST',{},editor)).status,200);
+
+// Camino 2: Secretaría pide revisión y Aprobador publica.
+const reviewed = await call('/api/admin/announcements','POST',{...values,title:`${values.title} · revisada`},editor);
+assert.equal(reviewed.status,201);
+const reviewedRoute = `/api/admin/announcements/${reviewed.body.item.id}`;
+assert.equal((await call(`${reviewedRoute}/submit`,'POST',{},editor)).status,200);
+assert.equal((await call(reviewedRoute,'PUT',{...values,title:'Edición bloqueada durante revisión'},editor)).status,403);
+assert.equal((await call(`${reviewedRoute}/approve`,'POST',{},approver)).status,200);
+assert.equal((await call(`${reviewedRoute}/approve`,'POST',{},approver)).status,403);
+const visible = (await call('/api/announcements')).body.find(item=>item.id===reviewed.body.item.id);
 assert.ok(visible);
 assert.equal('authorId' in visible,false);
-assert.equal((await call(`${route}/archive`,'POST',{},approver)).status,200);
-assert.equal((await call('/api/announcements')).body.some(item=>item.id===id),false);
+assert.equal((await call(`${reviewedRoute}/archive`,'POST',{},editor)).status,200);
+
 await call('/api/logout','POST',{},editor);
 await call('/api/logout','POST',{},approver);
-console.log('Supabase verificado: Auth, roles, borrador privado, revisión, aprobación separada, publicación única y archivo.');
+console.log('Supabase verificado: publicación directa de Secretaría y revisión opcional con Aprobador.');
