@@ -37,9 +37,11 @@ Este modelo evita que la revisión se convierta en un cuello de botella para avi
 ## Notificaciones
 
 - **Navegador:** cada estudiante autoriza el permiso en su dispositivo y elige temas. La notificación abre el aviso al pulsarla. Requiere HTTPS y claves VAPID.
-- **Correo:** cada estudiante elige temas y confirma la dirección mediante un enlace. La demo utiliza Azure Communication Services Email con un dominio administrado por Azure, lo que permite enviar correos reales sin comprar un dominio propio. Cada mensaje incluye un enlace para cancelar la suscripción.
+- **Correo:** cada estudiante elige temas y confirma la dirección mediante un enlace. La demo utiliza Azure Communication Services Email con un dominio administrado por Azure, lo que permite enviar correos reales sin comprar un dominio propio. Cada mensaje incluye un enlace para abrir el aviso y otro para cancelar la suscripción.
 
 Las notificaciones se generan en el momento en que un aviso pasa a estado **publicado**, ya sea mediante publicación directa de Secretaría/Administración o mediante aprobación después de una revisión.
+
+El **25 de octubre de 2026** se validó el flujo completo de correo en producción con una cuenta real `@alumnos.uda.cl`: la cuenta recibió el correo de confirmación de suscripción y, después de publicar un aviso desde el panel, recibió también el correo correspondiente al nuevo aviso.
 
 Para una eventual implementación institucional, el remitente administrado por Azure debería reemplazarse por una dirección autorizada por la Universidad de Atacama.
 
@@ -55,6 +57,44 @@ Para una eventual implementación institucional, el remitente administrado por A
 
 ## Estado actual del prototipo
 
-La demo desplegada utiliza Vercel, Supabase PostgreSQL, Supabase Auth, Azure Communication Services Email y Web Push. Para correo se configuraron recursos Azure independientes del proyecto TryAI, con un dominio `azurecomm.net` administrado por Azure y autenticado mediante SPF/DKIM. El archivo JSON se mantiene únicamente para desarrollo local.
+La demo desplegada utiliza:
+
+- **Vercel** para hosting y API serverless.
+- **Supabase PostgreSQL** para persistencia.
+- **Supabase Auth** para acceso de encargados.
+- **Azure Communication Services Email** para confirmaciones de suscripción y avisos por correo.
+- **Web Push con VAPID** para notificaciones del navegador.
+
+Para el correo se configuraron recursos Azure independientes del proyecto TryAI, con un dominio `azurecomm.net` administrado por Azure y autenticado mediante SPF, DKIM y DKIM2. El envío real hacia una cuenta `@alumnos.uda.cl` fue probado satisfactoriamente en producción.
+
+Resend fue utilizado durante una etapa inicial de la demo, pero **ya no forma parte de la arquitectura activa**.
+
+El archivo JSON se mantiene únicamente para desarrollo local. La versión desplegada utiliza Supabase y los servicios cloud configurados para la demo.
+
+## Alcance de la demo
+
+El prototipo permite demostrar de forma autónoma:
+
+```text
+Estudiante
+   ├── consulta avisos
+   ├── filtra por categoría
+   ├── se suscribe por correo
+   └── activa Web Push
+
+Secretaría
+   ├── crea y edita avisos
+   ├── publica directamente
+   └── envía a revisión de forma opcional
+
+Aprobador
+   └── revisa únicamente los avisos enviados a revisión
+
+Administración
+   ├── gestiona cuentas
+   └── supervisa el contenido
+```
+
+El correo y Web Push permiten que la demostración no dependa de que el desarrollador esté presente durante la presentación.
 
 La publicación como canal institucional oficial requiere validación de la Universidad de Atacama, definición de responsables editoriales, políticas de acceso, un remitente institucional autorizado y continuidad operativa.
