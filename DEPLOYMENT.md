@@ -5,6 +5,7 @@
 - Supabase creado: `portal-informativo-uda`, referencia `hfsjubvnyyzcqqsvpiei`, región São Paulo.
 - Vercel: proyecto independiente `portal-informativo-uda`, ID `prj_r06CNB7lR08xwXkMUOhyBGi0iQvq`, espacio Proyectos-Red. No enlazar ni desplegar sobre `tryai-gap`.
 - URL pública: https://portal-informativo-uda.vercel.app ; administración: https://portal-informativo-uda.vercel.app/admin .
+- Código en el repositorio privado https://github.com/Ad0niz/portal-informativo-uda ; rama de producción `main` conectada al proyecto existente de Vercel. Los pushes a esa rama inician despliegues automáticos.
 - Adaptador en `api/index.js` y `lib/cloud.mjs`; esquema aplicado desde `supabase/schema.sql`.
 - Variables de servidor configuradas en el proyecto nuevo. Claves privadas guardadas como sensibles en Vercel.
 - Tres cuentas demo creadas; credenciales en `demo-credentials.txt` (ignorado por Git).

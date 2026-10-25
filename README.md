@@ -10,6 +10,14 @@ Primera versión funcional de un portal de avisos para estudiantes de Derecho de
 - El despliegue usa Supabase Auth y Postgres; configuración, pruebas y pendientes en `DEPLOYMENT.md`.
 - Correo y Web Push configurados y probados: el titular confirmó que recibió ambos y que abren el aviso. Por ahora, el correo está limitado a la dirección de prueba autorizada de Resend.
 
+## Código y actualizaciones
+
+Repositorio privado: https://github.com/Ad0niz/portal-informativo-uda . La rama `main` está conectada al proyecto existente de Vercel. Cada push a `main` inicia el despliegue del portal.
+
+Para trabajar desde otro equipo: clonar el repositorio, ejecutar `npm ci` y consultar `DEPLOYMENT.md` para la configuración. Las claves y cuentas demo se entregan por separado: `.env`, `.env.cloud`, `demo-credentials.txt`, los datos locales y las capturas no se incluyen en Git.
+
+Antes de subir cambios, ejecutar `npm test`; después crear un commit y ejecutar `git push`. La configuración de producción permanece en Vercel y los datos permanecen en Supabase.
+
 ## Iniciar la versión local con JSON
 
 Requiere Node.js 22 o posterior. Ejecuta `npm install` antes de iniciar.
