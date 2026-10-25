@@ -1,0 +1,95 @@
+:root{
+  --navy:#264c59;
+  --navy-deep:#193840;
+  --navy-soft:#356573;
+  --ink:#213b43;
+  --muted:#667b80;
+  --paper:#f7f7f3;
+  --line:#e1e6e4;
+  --accent:#d6a400;
+  --accent-light:#fff5c9;
+  --gold:#ffc627;
+  --uda-gold:#ffc627;
+  --uda-green:#264c59;
+  --shadow:0 18px 48px rgba(38,76,89,.10)
+}
+
+/* Identidad UDA: petróleo + dorado, manteniendo el lenguaje editorial del portal */
+body{background:#f7f7f3}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline-color:#ffc627}
+.top-strip,.footer{background:var(--navy-deep)}
+.brand-mark,.header-action,.hero,.side-card-dark,.filter-button.active,.button-dark{background:var(--navy)}
+.brand-mark-rule,.eyebrow-line{background:var(--uda-gold)}
+.eyebrow,.side-card-dark .side-kicker,.header-action span,.footer-separator{color:var(--uda-gold)}
+.header-links a:hover,.footer a:hover{color:#9c7700}
+.hero h1 em{color:#ffd86a}
+.text-link{color:#ffe49a}
+
+/* Hero un poco más compacto para insinuar contenido debajo del primer pliegue */
+.hero-grid{padding:58px 0 46px;gap:76px}
+.hero h1{font-size:clamp(43px,4.7vw,66px);margin:20px 0 20px}
+.hero-copy>p{line-height:1.6}
+.hero-actions{margin-top:27px}
+.hero-feature{min-height:300px;box-shadow:0 24px 54px rgba(12,42,49,.18)}
+.hero-rule{padding:13px 0 15px}
+.live-dot{background:var(--uda-gold);box-shadow:0 0 0 4px rgba(255,198,39,.18)}
+.feature-category{color:#8a6500}
+
+/* Sección de avisos */
+.notice-section{padding-top:62px}
+.section-heading{margin-bottom:27px}
+.section-kicker,.side-kicker{color:#8a6500}
+.heading-dot{color:var(--uda-gold)}
+.toolbar{padding:10px;background:#f0f2ef;border:1px solid #e2e6e2;margin-bottom:14px}
+.toolbar-right{display:flex;align-items:center;gap:12px;margin-left:auto}
+.toolbar .section-count{padding:0;white-space:nowrap;color:#60757b;font-weight:700}
+.filter-button{border-color:#d7dfdc;color:#49636b;transition:border-color .16s,background .16s,color .16s,transform .16s}
+.filter-button:hover{border-color:var(--navy);transform:translateY(-1px)}
+.filter-button.active{border-color:var(--navy)}
+.search-box{border-color:#d7dfdc;transition:border-color .16s,box-shadow .16s}
+.search-box:focus-within{border-color:var(--navy);box-shadow:0 0 0 3px rgba(38,76,89,.08)}
+.notice-card{transition:box-shadow .18s,border-color .18s,transform .18s,background .18s}
+.notice-card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(38,76,89,.10);border-color:#b9c9c9}
+.notice-arrow{transition:background .18s,color .18s,border-color .18s,transform .18s}
+.notice-card:hover .notice-arrow{background:var(--navy);border-color:var(--navy);transform:translate(2px,-2px)}
+.notice-day{color:var(--navy)}
+.category-pill{background:#e6eeee;color:#264c59}
+.priority-pill{background:#fff1bd;color:#725400}
+.demo-pill{background:#f5f0df;color:#705f28}
+
+/* Suscripciones: cada canal explica qué hace antes del CTA */
+.subscribe-actions{gap:10px}
+.subscribe-option{position:relative;z-index:1;border:1px solid rgba(255,255,255,.22);padding:13px 13px 12px;background:rgba(255,255,255,.035)}
+.subscribe-option-copy{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.subscribe-option-copy strong{font-size:12px;color:#fff}
+.subscribe-option-copy span{font-size:10px;line-height:1.4;color:#b9cbd0}
+.subscribe-option .button{min-height:41px;padding:9px 12px}
+.side-card-icon{border-color:rgba(255,198,39,.55);color:var(--uda-gold)}
+.side-card-guide{background:#e8edeb;border-color:#dce4e0}
+.side-card-guide li span{color:#8a6500}
+
+/* Modal de correo: la opción General cierra visualmente el grid */
+.subscribe-dialog .check-item:nth-child(5){grid-column:1/-1}
+.subscribe-dialog .check-item:has(input:checked){border-color:var(--navy);background:#eef3f1;box-shadow:inset 3px 0 0 var(--uda-gold)}
+.subscribe-dialog .check-item:has(input:checked):after{background:var(--uda-gold);border-color:var(--uda-gold);color:#173941}
+.subscribe-dialog .check-item:has(input:checked):before{background:var(--navy);border-color:var(--navy)}
+.subscribe-dialog .check-item:hover{border-color:#9fb4b5;box-shadow:0 8px 24px rgba(38,76,89,.07)}
+
+/* Footer con contexto de demo */
+.footer-bottom{border-top-color:#31515a}
+.footer-demo{color:#d4dedf}
+.footer-demo strong{color:var(--uda-gold);font-weight:700}
+
+@media(max-width:900px){
+  .hero-grid{padding:50px 0 40px;gap:42px}
+  .toolbar{align-items:stretch;flex-direction:column}
+  .toolbar-right{margin-left:0;justify-content:space-between}
+}
+@media(max-width:680px){
+  .hero-grid{padding:42px 0 34px}
+  .toolbar-right{align-items:stretch;flex-direction:column-reverse;gap:8px}
+  .toolbar .section-count{padding-left:2px}
+  .search-box{width:100%}
+  .search-box input{width:100%}
+  .subscribe-dialog .check-item:nth-child(5){grid-column:auto}
+}
