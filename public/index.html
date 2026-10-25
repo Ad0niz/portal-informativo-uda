@@ -7,6 +7,7 @@
   <meta name="description" content="Avisos, cambios de clases y evaluaciones para estudiantes de Derecho de la Universidad de Atacama.">
   <title>Panel Informativo | Derecho UDA</title>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/featured.css">
 </head>
 <body>
   <a class="skip-link" href="#avisos">Saltar a los avisos</a>
@@ -28,10 +29,18 @@
           <p>Clases, evaluaciones, cambios de sala y comunicados de la carrera de Derecho. Encuentra lo que necesitas sin buscar entre publicaciones antiguas.</p>
           <div class="hero-actions"><a class="button button-light" href="#avisos">Ver avisos recientes <span aria-hidden="true">↓</span></a><a class="text-link" href="#suscripciones">Activar notificaciones <span aria-hidden="true">↗</span></a></div>
         </div>
-        <aside class="hero-feature" aria-label="Aviso destacado">
-          <div class="feature-top"><span class="live-dot"></span> EN EL PANEL <span class="feature-index">01 / ACTUALIDAD</span></div>
-          <div id="featured-content"><span class="skeleton-line"></span><span class="skeleton-line short"></span></div>
-          <div class="feature-footer"><span>Consulta los detalles antes de planificar tu jornada.</span><a href="#avisos" aria-label="Ir a todos los avisos">↗</a></div>
+        <aside class="hero-feature feature-empty" id="hero-feature" tabindex="0" role="button" aria-label="Ver los avisos recientes">
+          <div class="feature-top">
+            <div class="feature-heading"><span class="live-dot"></span><span id="feature-label">PANEL INFORMATIVO</span></div>
+            <time class="feature-date" id="feature-date"></time>
+          </div>
+          <div class="feature-body" id="hero-feature-content">
+            <span class="feature-category" id="feature-category">CARGANDO</span>
+            <h2 id="feature-title">Revisando los últimos avisos…</h2>
+            <p id="feature-summary">En un momento verás aquí la información más reciente.</p>
+          </div>
+          <div class="feature-footer"><span class="feature-cta" id="feature-cta">Ver todos los avisos <b aria-hidden="true">→</b></span></div>
+          <div id="featured-content" hidden></div>
         </aside>
       </div>
       <div class="hero-rule container"><span>CLARIDAD PARA TU VIDA UNIVERSITARIA</span><span>DESLIZA PARA EXPLORAR ↓</span></div>
@@ -65,5 +74,6 @@
   <dialog id="subscribe-dialog" class="dialog subscribe-dialog"><button class="dialog-close" type="button" data-close aria-label="Cerrar">×</button><div id="subscribe-content"></div></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script type="module" src="/app.js"></script>
+  <script type="module" src="/featured.js"></script>
 </body>
 </html>
