@@ -6,6 +6,7 @@ create table public.portal_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null check (length(name) between 1 and 80),
   email text not null unique,
+  position text not null default '' check (length(position) <= 80),
   role text not null check (role in ('owner','editor','approver')),
   active boolean not null default true
 );
