@@ -10,7 +10,9 @@ Portal de avisos académicos para estudiantes de Derecho de la Universidad de At
 - Hosting y API: Vercel.
 - Correo electrónico: Azure Communication Services Email.
 - Notificaciones del navegador: Web Push con VAPID.
-- Tres cuentas demo creadas: **Administración**, **Secretaría** y **Aprobador**. Las credenciales se mantienen fuera del repositorio.
+- Roles disponibles: **Administración**, **Secretaría** y **Aprobador**. Las credenciales se mantienen fuera del repositorio.
+- Administración puede crear otras cuentas administrativas y asignar un **cargo visible** sin cambiar el rol interno de permisos.
+- Administración puede consultar los correos registrados al boletín, sus categorías, estado de confirmación y fecha de actualización.
 - Web Push configurado y probado en producción.
 - El flujo de correo fue probado satisfactoriamente el **25 de octubre de 2026** con una cuenta real `@alumnos.uda.cl`: se recibió el correo de confirmación de suscripción y posteriormente un aviso publicado desde el panel.
 
@@ -20,7 +22,7 @@ La configuración técnica, las pruebas realizadas y las consideraciones para pr
 
 El sistema utiliza tres roles:
 
-- **Administración:** gestiona las cuentas con acceso al panel, supervisa el contenido y puede intervenir cuando sea necesario.
+- **Administración:** gestiona las cuentas con acceso al panel, puede crear otras cuentas de Administración, supervisa el contenido, consulta el registro del boletín e interviene cuando sea necesario.
 - **Secretaría:** crea, edita, publica, archiva y elimina borradores de sus avisos. Puede publicar inmediatamente o enviar un aviso a revisión si necesita una segunda validación.
 - **Aprobador:** participa únicamente cuando un aviso fue enviado a revisión. Puede aprobarlo y publicarlo o solicitar cambios antes de su publicación.
 
@@ -44,6 +46,37 @@ Borrador
 Esto permite publicar rápidamente cambios urgentes, como suspensiones de clases o cambios de sala, sin perder la posibilidad de solicitar revisión cuando la información o la redacción aún no están completamente confirmadas.
 
 Cuando un aviso se publica, aparece en el portal y se generan las notificaciones correspondientes para las personas suscritas a esa categoría.
+
+## Cuentas, roles y cargos
+
+El rol interno controla los permisos y el cargo visible identifica la función institucional o del equipo. Por ejemplo, una persona puede tener:
+
+```text
+Nombre: Fernando Molina
+Cargo visible: Presidente
+Rol interno: Administración (owner)
+```
+
+Esto permite mostrar **“Fernando Molina · Presidente”** en el panel, manteniendo los permisos de Administración.
+
+Desde **Cuentas y roles**, una cuenta de Administración puede crear:
+
+- otra cuenta de **Administración**;
+- una cuenta de **Secretaría**;
+- una cuenta de **Aprobador**.
+
+Las cuentas se crean en Supabase Auth y su perfil se registra en `portal_profiles` mediante la API del servidor.
+
+## Suscriptores del boletín
+
+Administración dispone de una sección **Boletín informativo → Suscriptores por correo**. Esta vista muestra únicamente:
+
+- dirección de correo;
+- categorías seleccionadas;
+- estado **Confirmado** o **Pendiente**;
+- fecha de última actualización.
+
+Los tokens de confirmación y cancelación, credenciales y datos técnicos de Web Push no se exponen en la interfaz administrativa.
 
 ## Código y actualizaciones
 
@@ -79,7 +112,7 @@ Portal público    API / Panel
  └── Avisos publicados
 ```
 
-El despliegue en Vercel utiliza `lib/cloud.mjs` para acceder a Supabase y `lib/email.mjs` para enviar correo mediante Azure Communication Services. La aplicación no depende del almacenamiento local de Vercel para conservar información.
+El despliegue en Vercel utiliza `lib/cloud.mjs` para acceder a Supabase, `lib/accounts.mjs` para la gestión administrativa de cuentas y suscriptores, y `lib/email.mjs` para enviar correo mediante Azure Communication Services. La aplicación no depende del almacenamiento local de Vercel para conservar información.
 
 ## Iniciar la versión local con JSON
 
