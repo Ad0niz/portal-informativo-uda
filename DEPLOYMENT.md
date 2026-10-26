@@ -6,12 +6,14 @@
 - Vercel: proyecto independiente `portal-informativo-uda`, dentro del workspace `adoniz-projects`.
 - URL pública: https://portal-informativo-uda.vercel.app ; administración: https://portal-informativo-uda.vercel.app/admin .
 - Código en el repositorio público https://github.com/Ad0niz/portal-informativo-uda ; rama de producción `main` conectada a Vercel. Los pushes a esa rama inician despliegues automáticos.
-- Adaptador en `api/index.js` y `lib/cloud.mjs`; gestión administrativa adicional en `lib/accounts.mjs`; esquema versionado en `supabase/schema.sql`.
+- Adaptador en `api/index.js` y `lib/cloud.mjs`; gestión administrativa adicional en `lib/accounts.mjs`; seguridad de primer ingreso en `lib/password.mjs`; esquema versionado en `supabase/schema.sql`.
 - Variables de servidor configuradas en Vercel. Las claves privadas se mantienen fuera del repositorio.
 - Roles disponibles: **Administración**, **Secretaría** y **Aprobador**.
 - Administración puede crear otras cuentas administrativas desde el panel.
 - Los perfiles admiten un campo `position` para mostrar un cargo como **Presidente** sin alterar el rol interno ni los permisos.
-- Administración puede consultar los correos registrados al boletín, sus categorías, estado de confirmación y fecha de actualización.
+- Las cuentas nuevas creadas desde el panel quedan marcadas con `mustChangePassword = true` y deben reemplazar su clave temporal en el primer ingreso.
+- La clave inicial y la nueva contraseña admiten entre **8 y 128 caracteres**.
+- Administración puede consultar los correos registrados al boletín, sus categorías, estado de confirmación y fecha de actualización, además de eliminar suscripciones desde el panel.
 - Auth, roles, persistencia, publicación y Web Push probados contra Supabase y la API pública.
 - El correo fue migrado desde Resend a **Azure Communication Services Email**.
 - El **25 de octubre de 2026** se validó en producción el flujo completo con una cuenta real `@alumnos.uda.cl`: confirmación de suscripción recibida y aviso posterior recibido correctamente.
@@ -27,7 +29,7 @@ La revisión es opcional por aviso:
 4. El Aprobador puede **Aprobar y publicar** o **Solicitar cambios**.
 5. Un aviso con cambios solicitados vuelve a Secretaría, que puede corregirlo y decidir nuevamente entre publicar o enviarlo a revisión.
 
-Administración gestiona cuentas, puede crear otras cuentas con rol `owner`, consulta el registro del boletín y puede intervenir en el contenido cuando sea necesario.
+Administración gestiona cuentas, puede crear otras cuentas con rol `owner`, administra el registro del boletín y puede intervenir en el contenido cuando sea necesario.
 
 Las notificaciones se generan cuando el aviso pasa a `published`, independientemente de si se publicó directamente o después de una revisión.
 
@@ -63,13 +65,68 @@ Administración puede crear:
 
 El flujo de alta crea primero el usuario en Supabase Auth con correo confirmado y luego registra el perfil en `portal_profiles`. Si la creación del perfil falla, la API intenta eliminar el usuario de Auth para evitar cuentas incompletas.
 
-La clave inicial debe tener entre 12 y 128 caracteres y debe entregarse a la persona por un canal seguro.
+La clave inicial debe tener entre **8 y 128 caracteres** y debe entregarse a la persona por un canal seguro.
 
-## Consulta de suscriptores del boletín
+Cada cuenta nueva creada desde el panel registra además:
+
+```text
+mustChangePassword: true
+```
+
+Las cuentas que existían antes de incorporar esta función mantienen el valor por defecto `false`, por lo que no se bloquean retroactivamente.
+
+## Cambio obligatorio de contraseña en el primer ingreso
+
+La gestión de este flujo está separada en `lib/password.mjs`.
+
+Rutas involucradas:
+
+```text
+GET  /api/password-status
+POST /api/change-password
+```
+
+Flujo:
+
+```text
+Cuenta creada por Administración
+        ↓
+Supabase Auth + portal_profiles
+        ↓
+mustChangePassword = true
+        ↓
+Login con clave temporal
+        ↓
+Panel detecta cambio obligatorio
+        ↓
+Usuario ingresa clave temporal actual
+        ↓
+Nueva clave + confirmación
+        ↓
+Supabase Auth actualiza la contraseña
+        ↓
+mustChangePassword = false
+        ↓
+Acceso al panel
+```
+
+Reglas aplicadas:
+
+- clave temporal y nueva clave: **8 a 128 caracteres**;
+- la nueva contraseña debe coincidir con su confirmación;
+- la nueva contraseña no puede ser igual a la temporal;
+- el servidor valida la clave temporal actual antes de aceptar el cambio;
+- mientras `mustChangePassword` sea `true`, las rutas `/api/admin/*` quedan bloqueadas aunque el usuario intente saltarse la pantalla del navegador.
+
+La aplicación no almacena contraseñas en `portal_profiles`; Supabase Auth mantiene el hash correspondiente.
+
+## Consulta y eliminación de suscriptores del boletín
 
 El endpoint administrativo `/api/admin/subscribers` requiere una sesión válida y comprueba que el perfil activo tenga rol `owner`.
 
-La respuesta expone únicamente:
+### Consulta
+
+`GET /api/admin/subscribers` expone únicamente:
 
 ```text
 email
@@ -82,6 +139,18 @@ No se envían al navegador `confirmToken`, `unsubscribeToken`, credenciales, cla
 
 La interfaz muestra esta información en **Boletín informativo → Suscriptores por correo**, incluyendo el total y un botón para actualizar la lista.
 
+### Eliminación
+
+`DELETE /api/admin/subscribers?email=<correo>` también está restringido a `owner`.
+
+Antes de ejecutar la acción, la interfaz solicita confirmación. El backend:
+
+1. elimina el registro de `portal_email_subscriptions` correspondiente al correo;
+2. elimina trabajos de entrega por correo de esa dirección cuyo estado todavía no sea `sent`;
+3. conserva los trabajos ya enviados como evidencia histórica de entrega.
+
+La eliminación desde el panel no expone ni necesita los tokens de confirmación o baja.
+
 ## Configuración realizada y pasos para repetirla
 
 1. Crear el proyecto de Supabase y el proyecto de Vercel.
@@ -89,13 +158,15 @@ La interfaz muestra esta información en **Boletín informativo → Suscriptores
 3. Aplicar `supabase/schema.sql` en un proyecto nuevo. Para proyectos ya creados, aplicar las migraciones posteriores en lugar de volver a ejecutar el esquema completo.
 4. Verificar RLS y permisos. Las tablas están protegidas frente a `anon` y `authenticated`; la API de Vercel media el acceso usando la clave del servidor.
 5. Crear la cuenta inicial `owner`; desde esa cuenta pueden crearse otras cuentas `owner`, `editor` y `approver` desde el panel.
-6. Configurar las variables de Vercel y `PUBLIC_BASE_URL` con la URL definitiva.
-7. Configurar Azure Communication Services Email según la sección de correo de este documento.
-8. Verificar desde el navegador ambos caminos: publicación directa y revisión opcional.
-9. Confirmar que la publicación aparece en el portal y que las notificaciones abren el aviso correspondiente.
-10. Realizar una prueba de suscripción con un correo real accesible antes de una demostración importante.
+6. Crear las cuentas operativas con una clave temporal de 8 o más caracteres y comprobar que cada persona complete el cambio obligatorio en su primer ingreso.
+7. Configurar las variables de Vercel y `PUBLIC_BASE_URL` con la URL definitiva.
+8. Configurar Azure Communication Services Email según la sección de correo de este documento.
+9. Verificar desde el navegador ambos caminos: publicación directa y revisión opcional.
+10. Confirmar que la publicación aparece en el portal y que las notificaciones abren el aviso correspondiente.
+11. Realizar una prueba de suscripción con un correo real accesible antes de una demostración importante.
+12. Verificar desde Administración que el suscriptor aparezca en el boletín y que la opción de eliminación funcione cuando corresponda.
 
-## Cambio de flujo aplicado el 25 de octubre de 2026
+## Cambio de flujo editorial aplicado el 25 de octubre de 2026
 
 Se reemplazó el requisito de aprobación obligatoria por un modelo opcional:
 
@@ -117,7 +188,27 @@ También se agregó:
 - separación entre cargo visible y rol interno;
 - módulo `lib/accounts.mjs` para operaciones administrativas;
 - consulta protegida de suscriptores del boletín;
-- nueva vista administrativa de correos registrados.
+- eliminación protegida de suscripciones y limpieza de entregas pendientes;
+- vista administrativa de correos registrados.
+
+## Cambio de seguridad de cuentas aplicado el 25 de octubre de 2026
+
+Se agregó a `portal_profiles`:
+
+```text
+mustChangePassword boolean not null default false
+```
+
+El backend de creación de cuentas asigna `true` a este campo para las cuentas nuevas. Se incorporó `lib/password.mjs` para:
+
+- consultar si la cuenta debe cambiar su clave;
+- validar la clave temporal actual;
+- exigir una nueva clave distinta;
+- actualizar la contraseña en Supabase Auth;
+- marcar el cambio como completado;
+- bloquear rutas administrativas hasta que el proceso termine.
+
+El formulario de creación de cuentas y la validación del servidor fueron ajustados de un mínimo anterior de 12 caracteres a un mínimo actual de **8 caracteres**.
 
 ## Notificaciones
 
@@ -218,6 +309,7 @@ VAPID_SUBJECT=
 - El remitente de demostración pertenece al dominio administrado de Azure y no representa una cuenta institucional oficial de la UDA.
 - Azure Communication Services Email se utiliza únicamente como infraestructura de demostración; una implementación oficial debería utilizar un remitente autorizado por la Universidad.
 - La vista de suscriptores contiene direcciones de correo y debe considerarse información administrativa; para un uso institucional se deben definir políticas de privacidad, acceso y retención.
+- El cambio obligatorio de contraseña inicial no reemplaza funcionalidades futuras como recuperación de cuenta, MFA, auditoría de sesiones o políticas institucionales de contraseñas.
 - Antes de uso institucional: recuperación de cuentas, gestión formal de usuarios, antispam, auditoría, accesibilidad, remitente institucional y continuidad operativa.
 
 ## Comprobaciones de seguridad
@@ -226,7 +318,11 @@ RLS está activado en las tablas. Los roles `anon` y `authenticated` no tienen a
 
 Los endpoints de gestión de cuentas y suscriptores vuelven a comprobar el rol `owner` en el servidor. Ocultar una sección en el HTML no se utiliza como mecanismo de autorización.
 
+El requisito de cambio de contraseña se valida en el backend mediante `mustChangePassword`. Mientras está activo, el servidor impide utilizar las rutas administrativas aunque el usuario manipule la interfaz del navegador.
+
 Las claves secretas de Supabase, Azure Communication Services y VAPID no deben incluirse en Git ni exponerse en JavaScript público.
+
+Supabase recomienda no utilizar contraseñas de menos de 8 caracteres. La demo utiliza 8 como mínimo; para un entorno institucional pueden definirse requisitos adicionales de complejidad, MFA y protección contra contraseñas filtradas.
 
 ## Pruebas reproducibles
 
@@ -241,6 +337,18 @@ Secretaría → publicar directamente
 Secretaría → enviar a revisión → Aprobador → publicar / solicitar cambios
 ```
 
+También debe probarse el ciclo de una cuenta nueva:
+
+```text
+Administración crea cuenta
+   ↓
+Login con clave temporal
+   ↓
+Cambio obligatorio de contraseña
+   ↓
+Acceso al panel
+```
+
 Para validar nuevamente el correo en producción:
 
 1. Abrir el portal público.
@@ -250,3 +358,5 @@ Para validar nuevamente el correo en producción:
 5. Abrir el correo recibido y confirmar la suscripción.
 6. Publicar un aviso de prueba de una categoría suscrita.
 7. Comprobar la recepción del segundo mensaje y sus enlaces.
+8. Desde Administración, verificar que el correo aparezca en **Suscriptores por correo**.
+9. Si la prueba ya terminó, usar **Eliminar** para retirar la suscripción y confirmar que desaparezca del listado.
