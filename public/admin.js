@@ -33,12 +33,33 @@ function visibleName(user) {
 function updateAuth(user) {
   state.user = user;
   $('#login-view').hidden = Boolean(user);
+  $('#password-view').hidden = true;
   $('#dashboard').hidden = !user;
   $('#logout').hidden = !user;
   if (!user) return;
   $('#admin-user').innerHTML = `<strong>${visibleName(user)}</strong>${html(roleLabels[user.role] || user.role)}`;
   $('#user-section').hidden = user.role !== 'owner';
   $('#editor-card').hidden = user.role === 'approver';
+}
+
+function showPasswordRequirement(user) {
+  state.user = user;
+  $('#login-view').hidden = true;
+  $('#dashboard').hidden = true;
+  $('#password-view').hidden = false;
+  $('#logout').hidden = false;
+  message('#password-message', '');
+}
+
+async function enterAuthenticated(user) {
+  const status = await api('/api/password-status');
+  if (status.required) {
+    showPasswordRequirement(user);
+    return false;
+  }
+  updateAuth(user);
+  await Promise.all([loadAnnouncements(), loadUsers()]);
+  return true;
 }
 
 function resetEditor() {
@@ -118,7 +139,7 @@ async function loadUsers() {
     state.user = { ...state.user, position: current.position || '' };
     $('#admin-user').innerHTML = `<strong>${visibleName(state.user)}</strong>${html(roleLabels[state.user.role] || state.user.role)}`;
   }
-  $('#users-list').innerHTML = users.map(user => `<div class="user-row"><div><strong>${visibleName(user)}</strong><small>${html(user.username)}</small></div><span>${html(roleLabels[user.role] || user.role)}</span></div>`).join('');
+  $('#users-list').innerHTML = users.map(user => `<div class="user-row"><div><strong>${visibleName(user)}</strong><small>${html(user.username)}</small>${user.mustChangePassword ? '<small>Debe cambiar la clave al iniciar sesión</small>' : ''}</div><span>${html(roleLabels[user.role] || user.role)}</span></div>`).join('');
 }
 
 function deliveryToast(prefix, result) {
@@ -154,13 +175,43 @@ $('#login-form').addEventListener('submit', async event => {
   button.disabled = true; message('#login-message', 'Ingresando…');
   try {
     const result = await api('/api/login', { method: 'POST', body: JSON.stringify({ username: form.elements.username.value, password: form.elements.password.value }) });
-    updateAuth(result.user); form.reset();
-    await Promise.all([loadAnnouncements(), loadUsers()]);
+    form.reset();
+    await enterAuthenticated(result.user);
   } catch (error) { message('#login-message', error.message, true); }
   finally { button.disabled = false; }
 });
 
-$('#logout').addEventListener('click', async () => { await api('/api/logout', { method: 'POST' }); updateAuth(null); resetEditor(); });
+$('#password-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
+  const currentPassword = form.elements.currentPassword.value;
+  const password = form.elements.password.value;
+  const confirmation = form.elements.confirmation.value;
+  if (password !== confirmation) {
+    message('#password-message', 'Las nuevas contraseñas no coinciden.', true);
+    return;
+  }
+  if (password.length < 8) {
+    message('#password-message', 'La nueva contraseña debe tener al menos 8 caracteres.', true);
+    return;
+  }
+  if (password === currentPassword) {
+    message('#password-message', 'La nueva contraseña debe ser distinta de la clave temporal.', true);
+    return;
+  }
+  button.disabled = true; message('#password-message', 'Actualizando contraseña…');
+  try {
+    await api('/api/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, password }) });
+    form.reset();
+    updateAuth(state.user);
+    await Promise.all([loadAnnouncements(), loadUsers()]);
+    toast('Contraseña actualizada. Ya puedes usar el panel.');
+  } catch (error) { message('#password-message', error.message, true); }
+  finally { button.disabled = false; }
+});
+
+$('#logout').addEventListener('click', async () => { await api('/api/logout', { method: 'POST' }); updateAuth(null); $('#password-form').reset(); resetEditor(); });
 $('#reset-editor').addEventListener('click', resetEditor);
 
 $('#editor-form').addEventListener('submit', async event => {
@@ -196,7 +247,7 @@ $('#user-form').addEventListener('submit', async event => {
   button.disabled = true; message('#user-message', 'Creando cuenta…');
   try {
     await api('/api/admin/accounts', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(form))) });
-    form.reset(); await loadUsers(); message('#user-message', 'Cuenta creada.');
+    form.reset(); await loadUsers(); message('#user-message', 'Cuenta creada. Deberá cambiar su clave en el primer ingreso.');
   } catch (error) { message('#user-message', error.message, true); }
   finally { button.disabled = false; }
 });
@@ -217,7 +268,7 @@ async function initialize() {
     }
     $('#notice-category').innerHTML = config.categories.map(category => `<option value="${html(category)}">${html(category)}</option>`).join('');
     if (!session.enabled) message('#login-message', 'El acceso al panel todavía no está configurado.', true);
-    if (session.authenticated) { updateAuth(session.user); await Promise.all([loadAnnouncements(), loadUsers()]); }
+    if (session.authenticated) await enterAuthenticated(session.user);
   } catch (error) { message('#login-message', error.message, true); }
 }
 initialize();
