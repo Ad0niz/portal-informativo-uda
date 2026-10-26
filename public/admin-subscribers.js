@@ -15,25 +15,48 @@ function formatDate(value) {
   }).format(date);
 }
 
+function renderCategories(categories) {
+  const values = Array.isArray(categories) ? categories.filter(Boolean) : [];
+  if (!values.length) return '<span class="subscriber-chip muted">Sin categorías</span>';
+  return values.map(value => `<span class="subscriber-chip">${html(value)}</span>`).join('');
+}
+
 function render(items) {
   count.textContent = `${items.length} ${items.length === 1 ? 'suscriptor' : 'suscriptores'}`;
   if (!items.length) {
     list.innerHTML = '<div class="subscriber-empty">Todavía no hay correos registrados en el boletín.</div>';
     return;
   }
-  list.innerHTML = items.map(item => `
-    <div class="subscriber-row">
-      <div class="subscriber-main">
-        <strong>${html(item.email)}</strong>
-        <small>${html((item.categories || []).join(' · ') || 'Sin categorías')}</small>
-      </div>
-      <div class="subscriber-meta">
-        <span class="subscriber-status ${item.confirmed ? 'confirmed' : 'pending'}">${item.confirmed ? 'Confirmado' : 'Pendiente'}</span>
-        <small>${html(formatDate(item.updatedAt))}</small>
-        <button class="subscriber-remove" type="button" data-remove-subscriber="${html(item.email)}">Eliminar</button>
-      </div>
-    </div>
-  `).join('');
+  list.innerHTML = items.map(item => {
+    const email = String(item.email || '').trim();
+    const initial = email ? email.charAt(0).toUpperCase() : '@';
+    return `
+      <article class="subscriber-row">
+        <div class="subscriber-main">
+          <div class="subscriber-identity">
+            <span class="subscriber-icon" aria-hidden="true">${html(initial)}</span>
+            <div class="subscriber-copy">
+              <span class="subscriber-label">Correo suscrito</span>
+              <strong>${html(email)}</strong>
+            </div>
+          </div>
+          <div class="subscriber-categories">
+            ${renderCategories(item.categories)}
+          </div>
+        </div>
+        <div class="subscriber-meta">
+          <div class="subscriber-meta-top">
+            <span class="subscriber-status ${item.confirmed ? 'confirmed' : 'pending'}">${item.confirmed ? 'Confirmado' : 'Pendiente'}</span>
+            <button class="subscriber-remove" type="button" data-remove-subscriber="${html(email)}">Eliminar</button>
+          </div>
+          <div class="subscriber-date-block">
+            <span class="subscriber-date-label">Última actualización</span>
+            <small>${html(formatDate(item.updatedAt))}</small>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
   list.querySelectorAll('[data-remove-subscriber]').forEach(button => {
     button.addEventListener('click', () => removeSubscriber(button.dataset.removeSubscriber, button));
   });
