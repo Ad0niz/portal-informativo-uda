@@ -30,9 +30,13 @@ function render(items) {
       <div class="subscriber-meta">
         <span class="subscriber-status ${item.confirmed ? 'confirmed' : 'pending'}">${item.confirmed ? 'Confirmado' : 'Pendiente'}</span>
         <small>${html(formatDate(item.updatedAt))}</small>
+        <button class="subscriber-remove" type="button" data-remove-subscriber="${html(item.email)}">Eliminar</button>
       </div>
     </div>
   `).join('');
+  list.querySelectorAll('[data-remove-subscriber]').forEach(button => {
+    button.addEventListener('click', () => removeSubscriber(button.dataset.removeSubscriber, button));
+  });
 }
 
 async function loadSubscribers() {
@@ -49,6 +53,27 @@ async function loadSubscribers() {
     list.innerHTML = `<div class="subscriber-empty error">${html(error.message)}</div>`;
   } finally {
     refresh.disabled = false;
+  }
+}
+
+async function removeSubscriber(email, button) {
+  if (!email || !confirm(`¿Eliminar a ${email} del boletín informativo?\n\nDejará de recibir futuros avisos por correo.`)) return;
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Eliminando…';
+  try {
+    const response = await fetch(`/api/admin/subscribers?email=${encodeURIComponent(email)}`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || `Error ${response.status}`);
+    await loadSubscribers();
+  } catch (error) {
+    alert(error.message);
+    button.disabled = false;
+    button.textContent = original;
   }
 }
 
