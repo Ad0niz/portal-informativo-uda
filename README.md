@@ -12,7 +12,8 @@ Portal de avisos académicos para estudiantes de Derecho de la Universidad de At
 - Notificaciones del navegador: Web Push con VAPID.
 - Roles disponibles: **Administración**, **Secretaría** y **Aprobador**. Las credenciales se mantienen fuera del repositorio.
 - Administración puede crear otras cuentas administrativas y asignar un **cargo visible** sin cambiar el rol interno de permisos.
-- Administración puede consultar los correos registrados al boletín, sus categorías, estado de confirmación y fecha de actualización.
+- Las cuentas nuevas creadas desde el panel reciben una **clave temporal de 8 a 128 caracteres** y deben reemplazarla obligatoriamente en el primer ingreso antes de acceder al panel.
+- Administración puede consultar los correos registrados al boletín, sus categorías, estado de confirmación y fecha de actualización, además de eliminar una suscripción cuando sea necesario.
 - Web Push configurado y probado en producción.
 - El flujo de correo fue probado satisfactoriamente el **25 de octubre de 2026** con una cuenta real `@alumnos.uda.cl`: se recibió el correo de confirmación de suscripción y posteriormente un aviso publicado desde el panel.
 
@@ -22,7 +23,7 @@ La configuración técnica, las pruebas realizadas y las consideraciones para pr
 
 El sistema utiliza tres roles:
 
-- **Administración:** gestiona las cuentas con acceso al panel, puede crear otras cuentas de Administración, supervisa el contenido, consulta el registro del boletín e interviene cuando sea necesario.
+- **Administración:** gestiona las cuentas con acceso al panel, puede crear otras cuentas de Administración, supervisa el contenido, consulta y administra el registro del boletín e interviene cuando sea necesario.
 - **Secretaría:** crea, edita, publica, archiva y elimina borradores de sus avisos. Puede publicar inmediatamente o enviar un aviso a revisión si necesita una segunda validación.
 - **Aprobador:** participa únicamente cuando un aviso fue enviado a revisión. Puede aprobarlo y publicarlo o solicitar cambios antes de su publicación.
 
@@ -67,6 +68,32 @@ Desde **Cuentas y roles**, una cuenta de Administración puede crear:
 
 Las cuentas se crean en Supabase Auth y su perfil se registra en `portal_profiles` mediante la API del servidor.
 
+### Cambio obligatorio de contraseña en el primer ingreso
+
+Las cuentas nuevas creadas desde el panel se marcan con `mustChangePassword = true`.
+
+El flujo es:
+
+```text
+Administración crea la cuenta
+        ↓
+Clave temporal de 8 a 128 caracteres
+        ↓
+La persona inicia sesión
+        ↓
+Pantalla obligatoria de cambio de contraseña
+        ↓
+Valida la clave temporal actual
+        ↓
+Guarda una nueva clave distinta
+        ↓
+Acceso normal al panel
+```
+
+Mientras el cambio esté pendiente, el backend bloquea el acceso a las rutas administrativas. La nueva contraseña debe tener entre **8 y 128 caracteres**, debe coincidir con su confirmación y no puede ser igual a la clave temporal utilizada para ingresar.
+
+Las cuentas que ya existían antes de incorporar esta función no se marcan automáticamente para cambio de contraseña.
+
 ## Suscriptores del boletín
 
 Administración dispone de una sección **Boletín informativo → Suscriptores por correo**. Esta vista muestra únicamente:
@@ -75,6 +102,8 @@ Administración dispone de una sección **Boletín informativo → Suscriptores 
 - categorías seleccionadas;
 - estado **Confirmado** o **Pendiente**;
 - fecha de última actualización.
+
+También puede eliminar una suscripción desde el panel. Al hacerlo se elimina el registro del boletín y se limpian los trabajos de correo pendientes que todavía no hayan sido enviados a esa dirección.
 
 Los tokens de confirmación y cancelación, credenciales y datos técnicos de Web Push no se exponen en la interfaz administrativa.
 
@@ -112,7 +141,14 @@ Portal público    API / Panel
  └── Avisos publicados
 ```
 
-El despliegue en Vercel utiliza `lib/cloud.mjs` para acceder a Supabase, `lib/accounts.mjs` para la gestión administrativa de cuentas y suscriptores, y `lib/email.mjs` para enviar correo mediante Azure Communication Services. La aplicación no depende del almacenamiento local de Vercel para conservar información.
+El despliegue en Vercel utiliza:
+
+- `lib/cloud.mjs` para autenticación, avisos, suscripciones y entrega de notificaciones;
+- `lib/accounts.mjs` para la gestión administrativa de cuentas y suscriptores;
+- `lib/password.mjs` para el cambio obligatorio de contraseña inicial y el bloqueo de rutas administrativas mientras esté pendiente;
+- `lib/email.mjs` para enviar correo mediante Azure Communication Services.
+
+La aplicación no depende del almacenamiento local de Vercel para conservar información.
 
 ## Iniciar la versión local con JSON
 
