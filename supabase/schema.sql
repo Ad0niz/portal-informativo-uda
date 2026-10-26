@@ -8,7 +8,8 @@ create table public.portal_profiles (
   email text not null unique,
   position text not null default '' check (length(position) <= 80),
   role text not null check (role in ('owner','editor','approver')),
-  active boolean not null default true
+  active boolean not null default true,
+  "mustChangePassword" boolean not null default false
 );
 
 create table public.portal_announcements (
